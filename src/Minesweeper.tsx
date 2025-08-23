@@ -167,9 +167,9 @@ function Face({
   return (
     <button
       onClick={onClick}
-      className="text-2xl px-3 py-1 rounded border shadow active:translate-y-px"
+      className="px-3 py-1 rounded border shadow active:translate-y-px"
     >
-      {map[status]}
+      <span className={"text-2xl"}>{map[status]}</span>
     </button>
   );
 }
