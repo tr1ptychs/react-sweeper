@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 
 type Location = {
   row: number;
@@ -80,10 +80,12 @@ function addMines(board: Board, mines: number, row: number, col: number) {
 
 function Cell({
   cell,
+  onHover,
   onReveal,
   onFlag,
 }: {
   cell: Cell;
+  onHover: () => void;
   onReveal: () => void;
   onFlag: () => void;
 }) {
@@ -104,6 +106,7 @@ function Cell({
     <div
       key={"id"}
       className={`${baseClassName} ${cell.revealed ? "bg-gray-100 " + adjColors[cell.adjacentMines] : "bg-gray-400 hover:bg-gray-500"}`}
+      onPointerEnter={onHover}
       onClick={onReveal}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -125,10 +128,12 @@ function Cell({
 
 function Board({
   board,
+  onHover,
   onReveal,
   onFlag,
 }: {
   board: Board;
+  onHover: (loc: Location) => void;
   onReveal: (row: number, col: number) => void;
   onFlag: (location: Location) => void;
 }) {
@@ -143,6 +148,9 @@ function Board({
           <Cell
             key={`${r}-${c}`}
             cell={cell}
+            onHover={() => {
+              onHover({ row: r, col: c });
+            }}
             onReveal={() => onReveal(r, c)}
             onFlag={() => onFlag({ row: r, col: c })}
           />
@@ -220,6 +228,8 @@ export default function Minesweeper() {
   const [cols, setCols] = useState(PRESETS[preset].cols);
   const [mines, setMines] = useState(PRESETS[preset].mines);
 
+  const [hover, setHover] = useState<Location | null>(null);
+
   const [board, setBoard] = useState<Board>(() => makeBoard(rows, cols));
   const [firstClick, setFirstClick] = useState(true);
   const [alive, setAlive] = useState(true);
@@ -244,70 +254,83 @@ export default function Minesweeper() {
     setMines(PRESETS[k].mines);
   }
 
-  function chord(b: Board, row: number, col: number, cell: Cell) {
-    const neigh = neighbors(b, row, col);
-    let adjacentFlags = 0;
-    neigh.forEach(({ row: nr, col: nc }) => {
-      if (b[nr][nc].flagged) adjacentFlags++;
-    });
-    if (adjacentFlags === cell.adjacentMines) {
+  const chord = useCallback(
+    (b: Board, row: number, col: number, cell: Cell) => {
+      const neigh = neighbors(b, row, col);
+      let adjacentFlags = 0;
       neigh.forEach(({ row: nr, col: nc }) => {
-        const nCell = board[nr][nc];
-        if (nCell.flagged) return;
-        if (nCell.mine) {
-          nCell.revealed = true;
-          setAlive(false);
-          setBoard(board);
-        }
-        if (!nCell.revealed) {
-          const newlyRevealed = reveal(board, nr, nc);
-          setRevealed((v) => v + newlyRevealed);
-        }
+        if (b[nr][nc].flagged) adjacentFlags++;
       });
-    }
-  }
+      if (adjacentFlags === cell.adjacentMines) {
+        neigh.forEach(({ row: nr, col: nc }) => {
+          const nCell = board[nr][nc];
+          if (nCell.flagged) return;
+          if (nCell.mine) {
+            nCell.revealed = true;
+            setAlive(false);
+            setBoard(board);
+          }
+          if (!nCell.revealed) {
+            const newlyRevealed = reveal(board, nr, nc);
+            setRevealed((v) => v + newlyRevealed);
+          }
+        });
+      }
+    },
+    [board],
+  );
 
-  function handleReveal(row: number, col: number) {
-    if (!alive) return;
+  const handleReveal = useCallback(
+    (row: number, col: number) => {
+      if (!alive) return;
 
-    const prevBoard = board;
-    const nextBoard = prevBoard.map((row) => row.map((cell) => ({ ...cell })));
+      const prevBoard = board;
+      const nextBoard = prevBoard.map((row) =>
+        row.map((cell) => ({ ...cell })),
+      );
 
-    if (firstClick) {
-      addMines(nextBoard, clamp(mines, 1, rows * cols - 1), row, col);
-      setFirstClick(false);
-    }
+      if (firstClick) {
+        addMines(nextBoard, clamp(mines, 1, rows * cols - 1), row, col);
+        setFirstClick(false);
+      }
 
-    const cell = nextBoard[row][col];
-    if (cell.flagged) return;
+      const cell = nextBoard[row][col];
+      if (cell.flagged) return;
 
-    if (cell.revealed) {
-      chord(nextBoard, row, col, cell);
-      return;
-    }
+      if (cell.revealed) {
+        chord(nextBoard, row, col, cell);
+        return;
+      }
 
-    if (cell.mine) {
-      cell.revealed = true;
-      setAlive(false);
+      if (cell.mine) {
+        cell.revealed = true;
+        setAlive(false);
+        setBoard(nextBoard);
+      } else {
+        const newlyRevealed = reveal(nextBoard, row, col);
+        setBoard(nextBoard);
+        setRevealed((v) => v + newlyRevealed);
+      }
+    },
+    [firstClick, mines, rows, cols, alive, board, chord],
+  );
+
+  const handleFlag = useCallback(
+    (location: Location) => {
+      if (!alive) return;
+      const { row, col } = location;
+
+      const prevBoard = board;
+      const nextBoard = prevBoard.map((row) =>
+        row.map((cell) => ({ ...cell })),
+      );
+      const cell = nextBoard[row][col];
+      if (cell.revealed) return;
+      cell.flagged = !cell.flagged;
       setBoard(nextBoard);
-    } else {
-      const newlyRevealed = reveal(nextBoard, row, col);
-      setBoard(nextBoard);
-      setRevealed((v) => v + newlyRevealed);
-    }
-  }
-
-  function handleFlag(location: Location) {
-    if (!alive) return;
-    const { row, col } = location;
-
-    const prevBoard = board;
-    const nextBoard = prevBoard.map((row) => row.map((cell) => ({ ...cell })));
-    const cell = nextBoard[row][col];
-    if (cell.revealed) return;
-    cell.flagged = !cell.flagged;
-    setBoard(nextBoard);
-  }
+    },
+    [alive, board],
+  );
 
   function reset() {
     setBoard(makeBoard(rows, cols));
@@ -315,6 +338,30 @@ export default function Minesweeper() {
     setAlive(true);
     setRevealed(0);
   }
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable)
+      )
+        return;
+      if (!alive || !hover) return;
+      if (e.key === "q") {
+        e.preventDefault();
+        handleReveal(hover.row, hover.col);
+      }
+      if (e.key === "w") {
+        e.preventDefault();
+        handleFlag(hover);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [alive, hover, handleReveal, handleFlag]);
 
   const flagsUsed = useMemo(
     () => board.flat().filter((c) => c.flagged).length,
@@ -391,7 +438,12 @@ export default function Minesweeper() {
           </div>
         </div>
 
-        <Board board={board} onReveal={handleReveal} onFlag={handleFlag} />
+        <Board
+          board={board}
+          onReveal={handleReveal}
+          onFlag={handleFlag}
+          onHover={setHover}
+        />
       </div>
     </div>
   );
