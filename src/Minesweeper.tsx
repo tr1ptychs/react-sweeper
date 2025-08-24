@@ -37,7 +37,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function neighbors(board: Board, row: number, col: number) {
+function neighbors(board: Board, row: number, col: number): Set<Location> {
   const rows = board.length;
   const cols = board[0].length;
   const result = new Set<Location>();
@@ -244,6 +244,32 @@ export default function Minesweeper() {
     setMines(PRESETS[k].mines);
   }
 
+  function chord(b: Board, row: number, col: number, cell: Cell) {
+    const neigh = neighbors(b, row, col);
+    let adjacentFlags = 0;
+    neigh.forEach(({ row: nr, col: nc }) => {
+      if (b[nr][nc].flagged) adjacentFlags++;
+    });
+    if (adjacentFlags === cell.adjacentMines) {
+      neigh.forEach(({ row: nr, col: nc }) => {
+        const nCell = board[nr][nc];
+        if (nCell.flagged) return;
+        console.log("cell is not flagged");
+        if (nCell.mine) {
+          console.log("cell is a mine");
+          nCell.revealed = true;
+          setAlive(false);
+          setBoard(board);
+        }
+        if (!nCell.revealed) {
+          console.log("cell is being revealed");
+          const newlyRevealed = reveal(board, nr, nc);
+          setRevealed((v) => v + newlyRevealed);
+        }
+      });
+    }
+  }
+
   function handleReveal(row: number, col: number) {
     if (!alive) return;
 
@@ -256,7 +282,12 @@ export default function Minesweeper() {
     }
 
     const cell = nextBoard[row][col];
-    if (cell.flagged || cell.revealed) return;
+    if (cell.flagged) return;
+
+    if (cell.revealed) {
+      chord(nextBoard, row, col, cell);
+      return;
+    }
 
     if (cell.mine) {
       cell.revealed = true;
