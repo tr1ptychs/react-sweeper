@@ -305,6 +305,13 @@ export default function Minesweeper() {
       if (cell.mine) {
         cell.revealed = true;
         setAlive(false);
+        nextBoard.forEach((row) => {
+          row.forEach((cell) => {
+            if (cell.mine) {
+              cell.revealed = true;
+            }
+          });
+        });
         setBoard(nextBoard);
       } else {
         const newlyRevealed = reveal(nextBoard, row, col);
