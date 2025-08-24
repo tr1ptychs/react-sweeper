@@ -254,15 +254,12 @@ export default function Minesweeper() {
       neigh.forEach(({ row: nr, col: nc }) => {
         const nCell = board[nr][nc];
         if (nCell.flagged) return;
-        console.log("cell is not flagged");
         if (nCell.mine) {
-          console.log("cell is a mine");
           nCell.revealed = true;
           setAlive(false);
           setBoard(board);
         }
         if (!nCell.revealed) {
-          console.log("cell is being revealed");
           const newlyRevealed = reveal(board, nr, nc);
           setRevealed((v) => v + newlyRevealed);
         }
