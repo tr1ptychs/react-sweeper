@@ -1,6 +1,13 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Cell, Board, Location } from "./board.ts";
-import { clamp, makeBoard, neighbors, addMines, reveal } from "./board.ts";
+import {
+  clamp,
+  makeBoard,
+  neighbors,
+  addMines,
+  reveal,
+  showMines,
+} from "./board.ts";
 
 const PRESETS = {
   Beginner: { rows: 9, cols: 9, mines: 10 },
@@ -173,29 +180,23 @@ export default function Minesweeper() {
     neigh.forEach(({ row: nr, col: nc }) => {
       if (b[nr][nc].flagged) adjacentFlags++;
     });
+
     if (adjacentFlags === cell.adjacentMines) {
       const nextBoard = b.map((row) => row.map((cell) => ({ ...cell })));
 
       neigh.forEach(({ row: nr, col: nc }) => {
         const nCell = nextBoard[nr][nc];
         if (nCell.flagged) return;
-        if (nCell.mine) {
-          nCell.revealed = true;
+
+        const newlyRevealed = reveal(nextBoard, { row: nr, col: nc });
+        // lose condition
+        if (newlyRevealed === -1) {
           setAlive(false);
-          nextBoard.forEach((row) => {
-            row.forEach((cell) => {
-              if (cell.mine) {
-                cell.revealed = true;
-              }
-            });
-          });
-          setBoard(nextBoard);
-        }
-        if (!nCell.revealed) {
-          const newlyRevealed = reveal(nextBoard, { row: nr, col: nc });
+          showMines(nextBoard);
+        } else {
           setRevealed((v) => v + newlyRevealed);
-          setBoard(nextBoard);
         }
+        setBoard(nextBoard);
       });
     }
   }, []);
@@ -216,29 +217,22 @@ export default function Minesweeper() {
 
       const { row, col } = loc;
       const cell = nextBoard[row][col];
-      if (cell.flagged) return;
 
       if (cell.revealed) {
         chord(nextBoard, loc, cell);
         return;
       }
 
-      if (cell.mine) {
-        cell.revealed = true;
+      const newlyRevealed = reveal(nextBoard, loc);
+
+      // lose condition
+      if (newlyRevealed === -1) {
         setAlive(false);
-        nextBoard.forEach((row) => {
-          row.forEach((cell) => {
-            if (cell.mine) {
-              cell.revealed = true;
-            }
-          });
-        });
-        setBoard(nextBoard);
+        showMines(nextBoard);
       } else {
-        const newlyRevealed = reveal(nextBoard, loc);
-        setBoard(nextBoard);
         setRevealed((v) => v + newlyRevealed);
       }
+      setBoard(nextBoard);
     },
     [firstClick, mines, rows, cols, alive, board, chord],
   );

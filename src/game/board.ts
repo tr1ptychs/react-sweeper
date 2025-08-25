@@ -103,24 +103,39 @@ export function addMines(
 }
 
 export function reveal(board: Board, loc: Location): number {
-  const stack: [number, number][] = [[loc.row, loc.col]];
+  const firstCell = board[loc.row][loc.col];
+  if (firstCell.mine) {
+    firstCell.revealed = true;
+    return -1;
+  }
+
+  const stack: Location[] = [loc];
   let revealed = 0;
   while (stack.length > 0) {
-    const [cr, cc] = stack.pop()!;
+    const { row: cr, col: cc } = stack.pop()!;
     const cell = board[cr][cc];
     if (cell.revealed || cell.flagged) continue;
     cell.revealed = true;
+
     revealed++;
-    if (cell.adjacentMines === 0 && !cell.mine) {
+    if (cell.adjacentMines === 0) {
       for (const { row: nr, col: nc } of neighbors(board, {
         row: cr,
         col: cc,
       })) {
-        const ncell = board[nr][nc];
-        if (!ncell.revealed && !ncell.flagged && !ncell.mine)
-          stack.push([nr, nc]);
+        stack.push({ row: nr, col: nc });
       }
     }
   }
   return revealed;
+}
+
+export function showMines(board: Board): void {
+  board.forEach((row) => {
+    row.forEach((cell) => {
+      if (cell.mine) {
+        cell.revealed = true;
+      }
+    });
+  });
 }
