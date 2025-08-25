@@ -1,18 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-
-type Location = {
-  row: number;
-  col: number;
-};
-
-type Cell = {
-  mine: boolean;
-  revealed: boolean;
-  flagged: boolean;
-  adjacentMines: number;
-};
-
-type Board = Cell[][];
+import type { Cell, Board, Location } from "./board.ts";
+import { clamp, makeBoard, neighbors, addMines, reveal } from "./board.ts";
 
 const PRESETS = {
   Beginner: { rows: 9, cols: 9, mines: 10 },
@@ -21,62 +9,6 @@ const PRESETS = {
 };
 
 type PresetKey = keyof typeof PRESETS;
-
-function makeBoard(rows: number, cols: number) {
-  return Array.from({ length: rows }, () =>
-    Array.from({ length: cols }, () => ({
-      mine: false,
-      revealed: false,
-      flagged: false,
-      adjacentMines: 0,
-    })),
-  );
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function neighbors(board: Board, row: number, col: number): Set<Location> {
-  const rows = board.length;
-  const cols = board[0].length;
-  const result = new Set<Location>();
-  for (let i = Math.max(0, row - 1); i <= Math.min(rows - 1, row + 1); i++) {
-    for (let j = Math.max(0, col - 1); j <= Math.min(cols - 1, col + 1); j++) {
-      if (i !== row || j !== col) {
-        result.add({ row: i, col: j });
-      }
-    }
-  }
-  return result;
-}
-
-function addMines(board: Board, mines: number, row: number, col: number) {
-  const rows = board.length;
-  const cols = board[0].length;
-  let mineCount = 0;
-
-  const exclude = new Set<string>();
-  neighbors(board, row, col).forEach(({ row: nr, col: nc }) => {
-    exclude.add(`${nr},${nc}`);
-  });
-
-  while (mineCount < mines) {
-    const r = Math.floor(Math.random() * rows);
-    const c = Math.floor(Math.random() * cols);
-    if (
-      !(r === row && c === col) &&
-      !exclude.has(`${r},${c}`) &&
-      !board[r][c].mine
-    ) {
-      mineCount++;
-      board[r][c].mine = true;
-      neighbors(board, r, c).forEach(({ row: nr, col: nc }) => {
-        board[nr][nc].adjacentMines++;
-      });
-    }
-  }
-}
 
 function Cell({
   cell,
@@ -134,8 +66,8 @@ function Board({
 }: {
   board: Board;
   onHover: (loc: Location) => void;
-  onReveal: (row: number, col: number) => void;
-  onFlag: (location: Location) => void;
+  onReveal: (loc: Location) => void;
+  onFlag: (loc: Location) => void;
 }) {
   const cols = board[0].length;
   return (
@@ -151,7 +83,7 @@ function Board({
             onHover={() => {
               onHover({ row: r, col: c });
             }}
-            onReveal={() => onReveal(r, c)}
+            onReveal={() => onReveal({ row: r, col: c })}
             onFlag={() => onFlag({ row: r, col: c })}
           />
         )),
@@ -159,6 +91,7 @@ function Board({
     </div>
   );
 }
+
 function Face({
   status,
   onClick,
@@ -189,26 +122,6 @@ function Counter({ value }: { value: number }) {
       {v.toString().padStart(3, "0")}
     </div>
   );
-}
-
-function reveal(board: Board, row: number, col: number): number {
-  const stack: [number, number][] = [[row, col]];
-  let revealed = 0;
-  while (stack.length > 0) {
-    const [cr, cc] = stack.pop()!;
-    const cell = board[cr][cc];
-    if (cell.revealed || cell.flagged) continue;
-    cell.revealed = true;
-    revealed++;
-    if (cell.adjacentMines === 0 && !cell.mine) {
-      for (const { row: nr, col: nc } of neighbors(board, cr, cc)) {
-        const ncell = board[nr][nc];
-        if (!ncell.revealed && !ncell.flagged && !ncell.mine)
-          stack.push([nr, nc]);
-      }
-    }
-  }
-  return revealed;
 }
 
 function useTimer(running: boolean, resetDep: boolean) {
@@ -254,34 +167,41 @@ export default function Minesweeper() {
     setMines(PRESETS[k].mines);
   }
 
-  const chord = useCallback(
-    (b: Board, row: number, col: number, cell: Cell) => {
-      const neigh = neighbors(b, row, col);
-      let adjacentFlags = 0;
+  const chord = useCallback((b: Board, loc: Location, cell: Cell) => {
+    const neigh = neighbors(b, loc);
+    let adjacentFlags = 0;
+    neigh.forEach(({ row: nr, col: nc }) => {
+      if (b[nr][nc].flagged) adjacentFlags++;
+    });
+    if (adjacentFlags === cell.adjacentMines) {
+      const nextBoard = b.map((row) => row.map((cell) => ({ ...cell })));
+
       neigh.forEach(({ row: nr, col: nc }) => {
-        if (b[nr][nc].flagged) adjacentFlags++;
+        const nCell = nextBoard[nr][nc];
+        if (nCell.flagged) return;
+        if (nCell.mine) {
+          nCell.revealed = true;
+          setAlive(false);
+          nextBoard.forEach((row) => {
+            row.forEach((cell) => {
+              if (cell.mine) {
+                cell.revealed = true;
+              }
+            });
+          });
+          setBoard(nextBoard);
+        }
+        if (!nCell.revealed) {
+          const newlyRevealed = reveal(nextBoard, { row: nr, col: nc });
+          setRevealed((v) => v + newlyRevealed);
+          setBoard(nextBoard);
+        }
       });
-      if (adjacentFlags === cell.adjacentMines) {
-        neigh.forEach(({ row: nr, col: nc }) => {
-          const nCell = board[nr][nc];
-          if (nCell.flagged) return;
-          if (nCell.mine) {
-            nCell.revealed = true;
-            setAlive(false);
-            setBoard(board);
-          }
-          if (!nCell.revealed) {
-            const newlyRevealed = reveal(board, nr, nc);
-            setRevealed((v) => v + newlyRevealed);
-          }
-        });
-      }
-    },
-    [board],
-  );
+    }
+  }, []);
 
   const handleReveal = useCallback(
-    (row: number, col: number) => {
+    (loc: Location) => {
       if (!alive) return;
 
       const prevBoard = board;
@@ -290,15 +210,16 @@ export default function Minesweeper() {
       );
 
       if (firstClick) {
-        addMines(nextBoard, clamp(mines, 1, rows * cols - 1), row, col);
+        addMines(nextBoard, clamp(mines, 1, rows * cols - 1), loc);
         setFirstClick(false);
       }
 
+      const { row, col } = loc;
       const cell = nextBoard[row][col];
       if (cell.flagged) return;
 
       if (cell.revealed) {
-        chord(nextBoard, row, col, cell);
+        chord(nextBoard, loc, cell);
         return;
       }
 
@@ -314,7 +235,7 @@ export default function Minesweeper() {
         });
         setBoard(nextBoard);
       } else {
-        const newlyRevealed = reveal(nextBoard, row, col);
+        const newlyRevealed = reveal(nextBoard, loc);
         setBoard(nextBoard);
         setRevealed((v) => v + newlyRevealed);
       }
@@ -323,15 +244,14 @@ export default function Minesweeper() {
   );
 
   const handleFlag = useCallback(
-    (location: Location) => {
+    (loc: Location) => {
       if (!alive || won) return;
-      const { row, col } = location;
 
       const prevBoard = board;
       const nextBoard = prevBoard.map((row) =>
         row.map((cell) => ({ ...cell })),
       );
-      const cell = nextBoard[row][col];
+      const cell = nextBoard[loc.row][loc.col];
       if (cell.revealed) return;
       cell.flagged = !cell.flagged;
       setBoard(nextBoard);
@@ -359,7 +279,7 @@ export default function Minesweeper() {
       if (!alive || !hover) return;
       if (e.key === "q") {
         e.preventDefault();
-        handleReveal(hover.row, hover.col);
+        handleReveal(hover);
       }
       if (e.key === "w") {
         e.preventDefault();
@@ -400,49 +320,51 @@ export default function Minesweeper() {
               {k}
             </button>
           ))}
-          <div className="flex items-center gap-2 text-sm">
-            <label>
-              Rows{" "}
-              <input
-                className="border px-1 w-14"
-                type="number"
-                value={rows}
-                min={5}
-                max={99}
-                onChange={(e) =>
-                  setRows(clamp(parseInt(e.target.value || "0"), 5, 99))
-                }
-              />
-            </label>
-            <label>
-              Cols{" "}
-              <input
-                className="border px-1 w-14"
-                type="number"
-                value={cols}
-                min={5}
-                max={99}
-                onChange={(e) =>
-                  setCols(clamp(parseInt(e.target.value || "0"), 5, 99))
-                }
-              />
-            </label>
-            <label>
-              Mines{" "}
-              <input
-                className="border px-1 w-16"
-                type="number"
-                value={mines}
-                min={1}
-                max={rows * cols - 1}
-                onChange={(e) =>
-                  setMines(
-                    clamp(parseInt(e.target.value || "0"), 1, rows * cols - 1),
-                  )
-                }
-              />
-            </label>
-          </div>
+          {/*
+            <div className="flex items-center gap-2 text-sm">
+              <label>
+                Rows{" "}
+                <input
+                  className="border px-1 w-14"
+                  type="number"
+                  value={rows}
+                  min={5}
+                  max={99}
+                  onChange={(e) =>
+                    setRows(clamp(parseInt(e.target.value || "0"), 5, 99))
+                  }
+                />
+              </label>
+              <label>
+                Cols{" "}
+                <input
+                  className="border px-1 w-14"
+                  type="number"
+                  value={cols}
+                  min={5}
+                  max={99}
+                  onChange={(e) =>
+                    setCols(clamp(parseInt(e.target.value || "0"), 5, 99))
+                  }
+                />
+              </label>
+              <label>
+                Mines{" "}
+                <input
+                  className="border px-1 w-16"
+                  type="number"
+                  value={mines}
+                  min={1}
+                  max={rows * cols - 1}
+                  onChange={(e) =>
+                    setMines(
+                      clamp(parseInt(e.target.value || "0"), 1, rows * cols - 9),
+                    )
+                  }
+                />
+              </label>
+              </div>
+            */}
         </div>
 
         <Board

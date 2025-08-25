@@ -1,4 +1,4 @@
-import Minesweeper from "./Minesweeper";
+import Minesweeper from "./game/Minesweeper";
 import "./App.css";
 
 function App() {
