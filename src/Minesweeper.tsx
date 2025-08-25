@@ -324,7 +324,7 @@ export default function Minesweeper() {
 
   const handleFlag = useCallback(
     (location: Location) => {
-      if (!alive) return;
+      if (!alive || won) return;
       const { row, col } = location;
 
       const prevBoard = board;
@@ -336,7 +336,7 @@ export default function Minesweeper() {
       cell.flagged = !cell.flagged;
       setBoard(nextBoard);
     },
-    [alive, board],
+    [alive, board, won],
   );
 
   function reset() {
