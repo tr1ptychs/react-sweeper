@@ -3,9 +3,9 @@ import type { Cell, Board, Location } from "./board.ts";
 import {
   clamp,
   makeBoard,
-  neighbors,
   addMines,
   reveal,
+  chord,
   showMines,
 } from "./board.ts";
 
@@ -183,36 +183,23 @@ export default function Minesweeper() {
     setMines(PRESETS[k].mines);
   }
 
-  const chord = useCallback((b: Board, loc: Location, cell: Cell) => {
-    const neigh = neighbors(b, loc);
-    let adjacentFlags = 0;
-    neigh.forEach(({ row: nr, col: nc }) => {
-      if (b[nr][nc].flagged) adjacentFlags++;
-    });
+  const handleChord = useCallback((b: Board, loc: Location) => {
+    const nextBoard = b.map((row) => row.map((cell) => ({ ...cell })));
+    const newlyRevealed = chord(nextBoard, loc);
 
-    if (adjacentFlags === cell.adjacentMines) {
-      const nextBoard = b.map((row) => row.map((cell) => ({ ...cell })));
-
-      neigh.forEach(({ row: nr, col: nc }) => {
-        const nCell = nextBoard[nr][nc];
-        if (nCell.flagged) return;
-
-        const newlyRevealed = reveal(nextBoard, { row: nr, col: nc });
-        // lose condition
-        if (newlyRevealed === -1) {
-          setAlive(false);
-          showMines(nextBoard);
-        } else {
-          setRevealed((v) => v + newlyRevealed);
-        }
-        setBoard(nextBoard);
-      });
+    // lose condition
+    if (newlyRevealed === -1) {
+      setAlive(false);
+      showMines(nextBoard);
+    } else {
+      setRevealed((v) => v + newlyRevealed);
     }
+    setBoard(nextBoard);
   }, []);
 
   const handleReveal = useCallback(
     (loc: Location) => {
-      if (!alive || won) return;
+      if (!alive || won || board[loc.row][loc.col].flagged) return;
 
       const prevBoard = board;
       const nextBoard = prevBoard.map((row) =>
@@ -220,7 +207,7 @@ export default function Minesweeper() {
       );
 
       if (firstClick) {
-        addMines(nextBoard, clamp(mines, 1, rows * cols - 1), loc);
+        addMines(nextBoard, clamp(mines, 1, rows * cols - 9), loc);
         setFirstClick(false);
       }
 
@@ -228,7 +215,7 @@ export default function Minesweeper() {
       const cell = nextBoard[row][col];
 
       if (cell.revealed) {
-        chord(nextBoard, loc, cell);
+        handleChord(nextBoard, loc);
         return;
       }
 
@@ -243,7 +230,7 @@ export default function Minesweeper() {
       }
       setBoard(nextBoard);
     },
-    [firstClick, mines, rows, cols, alive, board, chord, won],
+    [firstClick, mines, rows, cols, alive, board, won, handleChord],
   );
 
   const handleFlag = useCallback(
@@ -272,7 +259,7 @@ export default function Minesweeper() {
   useEffect(() => {
     function onKeyUp(e: KeyboardEvent) {
       const t = e.target as HTMLElement | null;
-      if (!alive || !hover || !t) return;
+      if (!hover || !t) return;
       if (e.key === "q") {
         e.preventDefault();
         handleReveal(hover);
@@ -285,7 +272,7 @@ export default function Minesweeper() {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const t = e.target as HTMLElement | null;
-      if (!alive || !hover || !t) return;
+      if (!hover || !t) return;
 
       if (e.key === "w") {
         e.preventDefault();

@@ -120,6 +120,31 @@ export function reveal(board: Board, loc: Location): number {
   return revealed;
 }
 
+export function chord(b: Board, loc: Location): number {
+  const cell = b[loc.row][loc.col];
+  const neigh = neighbors(b, loc);
+  let adjacentFlags = 0;
+  neigh.forEach(({ row: nr, col: nc }) => {
+    if (b[nr][nc].flagged) adjacentFlags++;
+  });
+
+  let revealed = 0;
+  if (adjacentFlags === cell.adjacentMines) {
+    neigh.forEach(({ row: nr, col: nc }) => {
+      const nCell = b[nr][nc];
+      if (nCell.flagged) return;
+      const newlyRevealed = reveal(b, { row: nr, col: nc });
+      if (newlyRevealed === -1) {
+        revealed = -1;
+        return;
+      } else {
+        revealed += newlyRevealed;
+      }
+    });
+  }
+  return revealed;
+}
+
 export function showMines(board: Board): void {
   board.forEach((row) => {
     row.forEach((cell) => {
