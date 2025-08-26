@@ -31,18 +31,8 @@ export function clamp(value: number, min: number, max: number) {
 }
 
 export function makeBoard(rows: number, cols: number): Board {
-  if (rows < 5 || cols < 5) {
-    return Array.from({ length: 5 }, () =>
-      Array.from({ length: 5 }, () => ({
-        mine: false,
-        revealed: false,
-        flagged: false,
-        adjacentMines: 0,
-      })),
-    );
-  }
-  return Array.from({ length: rows }, () =>
-    Array.from({ length: cols }, () => ({
+  return Array.from({ length: Math.max(5, rows) }, () =>
+    Array.from({ length: Math.max(5, cols) }, () => ({
       mine: false,
       revealed: false,
       flagged: false,

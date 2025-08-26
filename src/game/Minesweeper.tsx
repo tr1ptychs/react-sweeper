@@ -22,11 +22,13 @@ function Cell({
   onHover,
   onReveal,
   onFlag,
+  testid,
 }: {
   cell: Cell;
   onHover: () => void;
   onReveal: () => void;
   onFlag: () => void;
+  testid: string;
 }) {
   const baseClassName =
     "w-10 h-10 flex items-center justify-center border border-slate-950 select-none text-xl font-bold";
@@ -45,6 +47,7 @@ function Cell({
     <div
       key={"id"}
       className={`${baseClassName} ${cell.revealed ? "bg-gray-100 " + adjColors[cell.adjacentMines] : "bg-gray-400 hover:bg-gray-500"}`}
+      data-testid={testid}
       onPointerEnter={onHover}
       onClick={onReveal}
       onContextMenu={(e) => {
@@ -80,6 +83,7 @@ function Board({
   return (
     <div
       className="inline-grid"
+      data-testid="board"
       style={{ gridTemplateColumns: `repeat(${cols}, 2.5rem)` }}
     >
       {board.map((row, r) =>
@@ -92,6 +96,7 @@ function Board({
             }}
             onReveal={() => onReveal({ row: r, col: c })}
             onFlag={() => onFlag({ row: r, col: c })}
+            testid={`cell-${r}-${c}`}
           />
         )),
       )}
@@ -115,6 +120,7 @@ function Face({
   return (
     <button
       onClick={onClick}
+      data-testid="face"
       className="px-3 py-1 rounded border shadow active:translate-y-px"
     >
       <span className={"text-2xl"}>{map[status]}</span>
@@ -122,10 +128,13 @@ function Face({
   );
 }
 
-function Counter({ value }: { value: number }) {
+function Counter({ value, testid }: { value: number; testid: string }) {
   const v = clamp(value, -99, 999);
   return (
-    <div className="font-mono text-xl bg-black text-red-500 rounded px-2 py-1 w-16 text-center select-none">
+    <div
+      className="font-mono text-xl bg-black text-red-500 rounded px-2 py-1 w-16 text-center select-none"
+      data-testid={testid}
+    >
       {v.toString().padStart(3, "0")}
     </div>
   );
@@ -203,7 +212,7 @@ export default function Minesweeper() {
 
   const handleReveal = useCallback(
     (loc: Location) => {
-      if (!alive) return;
+      if (!alive || won) return;
 
       const prevBoard = board;
       const nextBoard = prevBoard.map((row) =>
@@ -234,19 +243,19 @@ export default function Minesweeper() {
       }
       setBoard(nextBoard);
     },
-    [firstClick, mines, rows, cols, alive, board, chord],
+    [firstClick, mines, rows, cols, alive, board, chord, won],
   );
 
   const handleFlag = useCallback(
     (loc: Location) => {
-      if (!alive || won) return;
-
       const prevBoard = board;
       const nextBoard = prevBoard.map((row) =>
         row.map((cell) => ({ ...cell })),
       );
       const cell = nextBoard[loc.row][loc.col];
-      if (cell.revealed) return;
+
+      if (!alive || won || cell.revealed) return;
+
       cell.flagged = !cell.flagged;
       setBoard(nextBoard);
     },
@@ -261,20 +270,23 @@ export default function Minesweeper() {
   }
 
   useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
+    function onKeyUp(e: KeyboardEvent) {
       const t = e.target as HTMLElement | null;
-      if (
-        t &&
-        (t.tagName === "INPUT" ||
-          t.tagName === "TEXTAREA" ||
-          t.isContentEditable)
-      )
-        return;
-      if (!alive || !hover) return;
+      if (!alive || !hover || !t) return;
       if (e.key === "q") {
         e.preventDefault();
         handleReveal(hover);
       }
+    }
+    window.addEventListener("keyup", onKeyUp);
+    return () => window.removeEventListener("keyup", onKeyUp);
+  }, [alive, hover, handleReveal, handleFlag]);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null;
+      if (!alive || !hover || !t) return;
+
       if (e.key === "w") {
         e.preventDefault();
         handleFlag(hover);
@@ -299,9 +311,9 @@ export default function Minesweeper() {
     <div className="min-h-screen w-full flex items-center justify-center p-4">
       <div className="bg-neutral-800 border border-stone-700 rounded-2xl shadow-xl p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <Counter value={mines - flagsUsed} />
+          <Counter value={mines - flagsUsed} testid="flags" />
           <Face status={status} onClick={reset} />
-          <Counter value={secs} />
+          <Counter value={secs} testid="timer" />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -314,51 +326,6 @@ export default function Minesweeper() {
               {k}
             </button>
           ))}
-          {/*
-            <div className="flex items-center gap-2 text-sm">
-              <label>
-                Rows{" "}
-                <input
-                  className="border px-1 w-14"
-                  type="number"
-                  value={rows}
-                  min={5}
-                  max={99}
-                  onChange={(e) =>
-                    setRows(clamp(parseInt(e.target.value || "0"), 5, 99))
-                  }
-                />
-              </label>
-              <label>
-                Cols{" "}
-                <input
-                  className="border px-1 w-14"
-                  type="number"
-                  value={cols}
-                  min={5}
-                  max={99}
-                  onChange={(e) =>
-                    setCols(clamp(parseInt(e.target.value || "0"), 5, 99))
-                  }
-                />
-              </label>
-              <label>
-                Mines{" "}
-                <input
-                  className="border px-1 w-16"
-                  type="number"
-                  value={mines}
-                  min={1}
-                  max={rows * cols - 1}
-                  onChange={(e) =>
-                    setMines(
-                      clamp(parseInt(e.target.value || "0"), 1, rows * cols - 9),
-                    )
-                  }
-                />
-              </label>
-              </div>
-            */}
         </div>
 
         <Board
