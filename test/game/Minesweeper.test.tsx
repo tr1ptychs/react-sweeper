@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi, describe, it, expect } from "vitest";
+import { vi, describe, it, expect, beforeEach } from "vitest";
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
 
 vi.mock("../../src/game/board.ts", async () => {
   const actual = await vi.importActual<
@@ -53,6 +57,20 @@ describe("Minesweeper", () => {
     await user.click(firstCell);
     expect(boardFns.addMines).toHaveBeenCalledTimes(1);
     expect(boardFns.reveal).toHaveBeenCalledTimes(1);
+  });
+
+  it("second left click does not place more mines", async () => {
+    const user = userEvent.setup();
+    render(<Minesweeper />);
+    const grid = screen.getByTestId("board");
+    const firstCell = grid.firstElementChild as HTMLElement;
+    const secondCell = screen.getByTestId("cell-8-8");
+
+    await user.click(firstCell);
+    const before = vi.mocked(boardFns).addMines.mock.calls.length;
+    await user.click(secondCell);
+    const after = vi.mocked(boardFns).addMines.mock.calls.length;
+    expect(before).toBe(after);
   });
 
   it("right-click flags and updates remaining mines counter", async () => {
@@ -124,33 +142,80 @@ describe("Minesweeper", () => {
     const grid = screen.getByTestId("board");
     const cell = grid.firstElementChild as HTMLElement;
 
+    await user.keyboard("w");
+    expect(cell).toHaveTextContent("");
+    const before = vi.mocked(boardFns).reveal.mock.calls.length;
+    await user.keyboard("q");
+    const after = vi.mocked(boardFns).reveal.mock.calls.length;
+    expect(before).toBe(after);
+
     fireEvent.pointerEnter(cell);
     await user.keyboard("w");
     expect(cell).toHaveTextContent("🚩");
-
+    // other keys don't flag
+    await user.keyboard("d");
+    expect(cell).toHaveTextContent("🚩");
+    // cell doesn't reveal with flag
     await user.keyboard("q");
-    expect(vi.mocked(boardFns.reveal)).toHaveBeenCalled();
+    expect(cell).toHaveTextContent("🚩");
+
+    await user.keyboard("w");
+    expect(cell).toHaveTextContent("");
+
+    const callsBefore = vi.mocked(boardFns).reveal.mock.calls.length;
+    await user.keyboard("q");
+    const callsAfter = vi.mocked(boardFns).reveal.mock.calls.length;
+    expect(callsBefore).toBeLessThan(callsAfter);
   });
 
   it("changing presets updates mine counter", async () => {
     const user = userEvent.setup();
     render(<Minesweeper />);
+    expect(screen.getAllByText(/^\d{3}$/)[0]).toHaveTextContent("010");
+
     await user.click(screen.getByRole("button", { name: "Intermediate" }));
     expect(screen.getAllByText(/^\d{3}$/)[0]).toHaveTextContent("040");
+
+    await user.click(screen.getByRole("button", { name: "Expert" }));
+    expect(screen.getAllByText(/^\d{3}$/)[0]).toHaveTextContent("099");
   });
 
-  it("chording a revealed zero triggers neighbor reveals", async () => {
+  it("clicking a revealed zero triggers chord", async () => {
     const user = userEvent.setup();
+
+    vi.mocked(boardFns.addMines).mockImplementationOnce(
+      (board: boardFns.Board) => {
+        board[2][0].mine = true;
+        board[1][0].adjacentMines = 1;
+        board[1][0].revealed = true;
+        board[1][1].adjacentMines = 1;
+        board[1][1].revealed = true;
+        board[0][1].adjacentMines = 1;
+        board[0][1].revealed = true;
+      },
+    );
+
+    const real = await vi.importActual<
+      typeof import("../../src/game/board.ts")
+    >("../../src/game/board.ts");
+    vi.spyOn(boardFns, "reveal").mockImplementation((b, loc) =>
+      real.reveal(b, loc),
+    );
+
     render(<Minesweeper />);
-    const grid = screen.getByTestId("board");
-    const cell = grid.firstElementChild as HTMLElement;
 
-    await user.click(cell);
+    const chordTile = screen.getByTestId("cell-1-0");
+    await user.click(screen.getByTestId("cell-0-0"));
+    expect(chordTile).toHaveTextContent("1");
+
+    const correctNeighbor = screen.getByTestId("cell-2-0");
+    fireEvent.contextMenu(correctNeighbor);
+    expect(correctNeighbor).toHaveTextContent("🚩");
+
     const callsBefore = vi.mocked(boardFns).reveal.mock.calls.length;
-    await user.click(cell);
+    await user.click(chordTile);
     const callsAfter = vi.mocked(boardFns).reveal.mock.calls.length;
-
-    expect(callsAfter).toBeGreaterThan(callsBefore);
+    expect(callsAfter).toBe(callsBefore);
   });
 
   it("renders the adjacent number after reveal", async () => {
@@ -184,8 +249,6 @@ describe("Minesweeper", () => {
     const callsBefore = vi.mocked(boardFns).reveal.mock.calls.length;
     await user.click(otherCell);
     const callsAfter = vi.mocked(boardFns).reveal.mock.calls.length;
-
-    expect(callsAfter).toBe(callsBefore);
 
     expect(callsAfter).toBe(callsBefore);
 
