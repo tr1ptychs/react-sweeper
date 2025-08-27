@@ -230,6 +230,13 @@ describe("neighbors", () => {
       ]),
     );
   });
+
+  it("invalid location", () => {
+    expect(neighbors(board, { row: -1, col: 0 })).toEqual(new Set<Location>());
+    expect(neighbors(board, { row: 0, col: -1 })).toEqual(new Set<Location>());
+    expect(neighbors(board, { row: 5, col: 0 })).toEqual(new Set<Location>());
+    expect(neighbors(board, { row: 0, col: 5 })).toEqual(new Set<Location>());
+  });
 });
 
 const countMines = (b: Board) =>
@@ -252,7 +259,7 @@ describe("addMines", () => {
     });
   });
 
-  it("places M mines, 3x4 safe area clean, seed = 1, 5x5 board, maximum mines (16 = 25-9)", () => {
+  it("places M mines, 3x3 safe area clean, seed = 1, 5x5 board, maximum mines (16 = 25-9)", () => {
     const b = makeBoard(5, 5);
     const safe = { row: 2, col: 2 };
     addMines(b, 25 - 9, safe, random(1));
@@ -315,6 +322,7 @@ describe("reveal", () => {
 
     const count = reveal(b, { row: 4, col: 4 });
     expect(count).toBe(24);
+    expect(count).toBe(countRevealed(b));
     b.forEach((row) => {
       row.forEach((cell) => {
         if (cell.mine) {
@@ -332,6 +340,7 @@ describe("reveal", () => {
     const c1 = reveal(b, { row: 0, col: 0 });
     const c2 = reveal(b, { row: 1, col: 1 });
     expect(c1).toBe(25);
+    expect(c1).toBe(countRevealed(b));
     expect(c2).toBe(0);
   });
 
@@ -467,5 +476,27 @@ describe("chord", () => {
     const revealed = chord(b, { row: 1, col: 1 });
     expect(revealed).toBe(-1);
     expect(b[1][2].revealed).toBe(false);
+  });
+
+  it("reveals correct squares", () => {
+    const b = makeBoard(5, 5);
+    b[1][1].revealed = true;
+    b[1][1].adjacentMines = 1;
+    neighbors(b, { row: 1, col: 1 }).forEach((n) => {
+      b[n.row][n.col].adjacentMines = 1;
+    });
+    b[2][2].adjacentMines = 0;
+    b[0][0].adjacentMines = 0;
+    b[2][2].mine = true;
+    b[2][2].flagged = true;
+    const revealed = chord(b, { row: 1, col: 1 });
+    expect(countRevealed(b)).toBe(8);
+    expect(revealed).toBe(7);
+    neighbors(b, { row: 1, col: 1 }).forEach((n) => {
+      if (n.row === 2 && n.col === 2) return;
+      expect(b[n.row][n.col].revealed).toBe(true);
+    });
+    expect(b[1][1].revealed).toBe(true);
+    expect(b[2][2].revealed).toBe(false);
   });
 });

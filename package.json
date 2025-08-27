@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
+    "test:mutant": "stryker run",
     "test:watch": "vitest --watch",
     "test:ci": "vitest run --coverage"
   },

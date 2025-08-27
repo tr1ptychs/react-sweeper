@@ -7,7 +7,7 @@ export default defineConfig({
     environment: "node",
     globals: true,
     include: ["test/**/*.{test,spec}.{ts,tsx}"],
-    setupFiles: ["./setup-tests.ts"],
+    setupFiles: ["./vitest.setup.ts"],
     coverage: {
       include: ["src/**/*.{ts,tsx}"],
       exclude: ["src/main.tsx", "vite-env.d.ts", "**/*.d.ts"],

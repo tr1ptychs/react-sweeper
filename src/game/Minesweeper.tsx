@@ -308,7 +308,7 @@ export default function Minesweeper() {
             <button
               key={k}
               onClick={() => resetToPreset(k as PresetKey)}
-              className={`px-3 py-1 rounded border text-sm ${preset === k ? "bg-black text-white" : "bg-white"}`}
+              className={"px-3 py-1 rounded border text-sm bg-black text-white"}
             >
               {k}
             </button>

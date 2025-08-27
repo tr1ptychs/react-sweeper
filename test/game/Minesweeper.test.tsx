@@ -166,6 +166,12 @@ describe("Minesweeper", () => {
     await user.keyboard("q");
     const callsAfter = vi.mocked(boardFns).reveal.mock.calls.length;
     expect(callsBefore).toBeLessThan(callsAfter);
+
+    const beforeLeave = vi.mocked(boardFns).reveal.mock.calls.length;
+    fireEvent.pointerLeave(cell);
+    await user.keyboard("q");
+    const afterLeave = vi.mocked(boardFns).reveal.mock.calls.length;
+    expect(beforeLeave).toBe(afterLeave);
   });
 
   it("changing presets updates mine counter", async () => {
@@ -178,6 +184,26 @@ describe("Minesweeper", () => {
 
     await user.click(screen.getByRole("button", { name: "Expert" }));
     expect(screen.getAllByText(/^\d{3}$/)[0]).toHaveTextContent("099");
+  });
+
+  it("changing presets updates board size", async () => {
+    const user = userEvent.setup();
+    render(<Minesweeper />);
+
+    await user.click(screen.getByRole("button", { name: "Beginner" }));
+    expect(screen.getByTestId("cell-8-8")).toBeInTheDocument();
+    expect(screen.queryByTestId("cell-9-8")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("cell-8-9")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Intermediate" }));
+    expect(screen.getByTestId("cell-15-15")).toBeInTheDocument();
+    expect(screen.queryByTestId("cell-16-15")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("cell-15-16")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Expert" }));
+    expect(screen.getByTestId("cell-15-29")).toBeInTheDocument();
+    expect(screen.queryByTestId("cell-15-30")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("cell-16-29")).not.toBeInTheDocument();
   });
 
   it("clicking a revealed zero triggers chord", async () => {
