@@ -198,8 +198,8 @@ describe("Minesweeper", () => {
     const real = await vi.importActual<
       typeof import("../../src/game/board.ts")
     >("../../src/game/board.ts");
-    vi.spyOn(boardFns, "reveal").mockImplementation((b, loc) =>
-      real.reveal(b, loc),
+    vi.spyOn(boardFns, "chord").mockImplementation((b, loc) =>
+      real.chord(b, loc),
     );
 
     render(<Minesweeper />);
@@ -212,10 +212,8 @@ describe("Minesweeper", () => {
     fireEvent.contextMenu(correctNeighbor);
     expect(correctNeighbor).toHaveTextContent("🚩");
 
-    const callsBefore = vi.mocked(boardFns).reveal.mock.calls.length;
     await user.click(chordTile);
-    const callsAfter = vi.mocked(boardFns).reveal.mock.calls.length;
-    expect(callsAfter).toBe(callsBefore);
+    expect(vi.mocked(boardFns).chord.mock.calls.length).toBe(1);
   });
 
   it("renders the adjacent number after reveal", async () => {

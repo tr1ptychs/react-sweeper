@@ -7,6 +7,7 @@ import {
   neighbors,
   addMines,
   reveal,
+  chord,
   showMines,
 } from "../../src/game/board";
 
@@ -410,5 +411,61 @@ describe("showMines", () => {
     addMines(b, 8, { row: 0, col: 0 });
     showMines(b);
     expect(countRevealed(b)).toBe(8);
+  });
+});
+
+describe("chord", () => {
+  it("does not reveal on no adjacent flags", () => {
+    const b = makeBoard(5, 5);
+    b[1][1].revealed = true;
+    b[1][1].adjacentMines = 1;
+    const revealed = chord(b, { row: 1, col: 1 });
+    expect(countRevealed(b)).toBe(1);
+    expect(revealed).toBe(0);
+  });
+
+  it("does not reveal on (adjacent flags < adjacentMines)", () => {
+    const b = makeBoard(5, 5);
+    b[1][1].revealed = true;
+    b[1][1].adjacentMines = 2;
+    b[1][2].flagged = true;
+    const revealed = chord(b, { row: 1, col: 1 });
+    expect(countRevealed(b)).toBe(1);
+    expect(revealed).toBe(0);
+  });
+
+  it("does not reveal on (adjacent flags > adjacentMines)", () => {
+    const b = makeBoard(5, 5);
+    b[1][1].revealed = true;
+    b[1][1].adjacentMines = 1;
+    b[1][2].flagged = true;
+    b[2][2].flagged = true;
+    const revealed = chord(b, { row: 1, col: 1 });
+    expect(countRevealed(b)).toBe(1);
+    expect(revealed).toBe(0);
+  });
+
+  it("does not reveal flagged squares", () => {
+    const b = makeBoard(5, 5);
+    b[1][1].revealed = true;
+    b[1][1].adjacentMines = 1;
+    b[1][2].flagged = true;
+    b[4][4].flagged = true;
+    b[3][3].flagged = true;
+    const revealed = chord(b, { row: 1, col: 1 });
+    expect(countRevealed(b)).toBe(22);
+    expect(revealed).toBe(21);
+    expect(b[1][2].revealed).toBe(false);
+  });
+
+  it("returns -1 on revealing mine", () => {
+    const b = makeBoard(5, 5);
+    b[1][1].revealed = true;
+    b[1][1].adjacentMines = 1;
+    b[1][2].flagged = true;
+    b[2][2].mine = true;
+    const revealed = chord(b, { row: 1, col: 1 });
+    expect(revealed).toBe(-1);
+    expect(b[1][2].revealed).toBe(false);
   });
 });
