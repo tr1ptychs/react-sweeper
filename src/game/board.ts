@@ -93,12 +93,6 @@ export function addMines(
 }
 
 export function reveal(board: Board, loc: Location): number {
-  const firstCell = board[loc.row][loc.col];
-  if (firstCell.mine) {
-    firstCell.revealed = true;
-    return -1;
-  }
-
   const stack: Location[] = [loc];
   let revealed = 0;
   while (stack.length > 0) {
@@ -107,6 +101,9 @@ export function reveal(board: Board, loc: Location): number {
     if (cell.revealed || cell.flagged) continue;
     cell.revealed = true;
 
+    if (cell.mine) {
+      return -1;
+    }
     revealed++;
     if (cell.adjacentMines === 0) {
       for (const { row: nr, col: nc } of neighbors(board, {
@@ -130,17 +127,14 @@ export function chord(b: Board, loc: Location): number {
 
   let revealed = 0;
   if (adjacentFlags === cell.adjacentMines) {
-    neigh.forEach(({ row: nr, col: nc }) => {
-      const nCell = b[nr][nc];
-      if (nCell.flagged) return;
+    for (const { row: nr, col: nc } of neigh) {
       const newlyRevealed = reveal(b, { row: nr, col: nc });
       if (newlyRevealed === -1) {
-        revealed = -1;
-        return;
+        return -1;
       } else {
         revealed += newlyRevealed;
       }
-    });
+    }
   }
   return revealed;
 }
