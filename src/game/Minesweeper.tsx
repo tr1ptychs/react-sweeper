@@ -164,7 +164,7 @@ export default function Minesweeper() {
   const [alive, setAlive] = useState(true);
   const [revealed, setRevealed] = useState(0);
   const totalSafe = rows * cols - mines;
-  const won = alive && revealed === totalSafe && totalSafe > 0;
+  const won = alive && revealed === totalSafe;
 
   const running = alive && !firstClick && !won;
   const secs = useTimer(running, firstClick);
