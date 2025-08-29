@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Cell, Board, Location } from "./board.ts";
 import {
+  dailySeed,
   random,
   clamp,
   makeBoard,
@@ -14,7 +15,7 @@ const PRESETS = {
   Beginner: { rows: 9, cols: 9, mines: 10 },
   Intermediate: { rows: 16, cols: 16, mines: 40 },
   Expert: { rows: 16, cols: 30, mines: 99 },
-  Challenge: { rows: 20, cols: 30, mines: 130 },
+  Daily: { rows: 20, cols: 30, mines: 130 },
 };
 
 type PresetKey = keyof typeof PRESETS;
@@ -33,7 +34,7 @@ function Cell({
   testid: string;
 }) {
   const baseClassName =
-    "w-10 h-10 flex items-center justify-center border border-slate-950 select-none text-xl font-bold";
+    "w-8 h-8 flex items-center justify-center border border-slate-950 select-none text-xl font-bold";
   const adjColors = [
     "",
     "text-blue-700",
@@ -86,7 +87,7 @@ function Board({
     <div
       className="inline-grid"
       data-testid="board"
-      style={{ gridTemplateColumns: `repeat(${cols}, 2.5rem)` }}
+      style={{ gridTemplateColumns: `repeat(${cols}, 2rem)` }}
     >
       {board.map((row, r) =>
         row.map((cell, c) => (
@@ -179,31 +180,13 @@ export default function Minesweeper() {
     setRevealed(0);
   }, [rows, cols, mines]);
 
-  function dailySeedKey(rows: number, cols: number, mines: number) {
-    const now = new Date();
-    const y = now.getUTCFullYear();
-    const m = String(now.getUTCMonth() + 1).padStart(2, "0");
-    const d = String(now.getUTCDate()).padStart(2, "0");
-    return `${y}-${m}-${d}|${rows}x${cols}|${mines}`;
-  }
-
-  function seedFromString(str: string): number {
-    // FNV-1a 32-bit
-    let h = 2166136261 >>> 0;
-    for (let i = 0; i < str.length; i++) {
-      h ^= str.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return h >>> 0;
-  }
-
   function resetToPreset(k: PresetKey) {
     setPreset(k);
     setRows(PRESETS[k].rows);
     setCols(PRESETS[k].cols);
     setMines(PRESETS[k].mines);
-    if (k === "Challenge") {
-      setSeed(seedFromString(dailySeedKey(rows, cols, mines)));
+    if (k === "Daily") {
+      setSeed(dailySeed(rows, cols, mines));
     } else setSeed(null);
   }
 
