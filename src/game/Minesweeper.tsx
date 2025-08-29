@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Cell, Board, Location } from "./board.ts";
 import {
+  random,
   clamp,
   makeBoard,
   addMines,
@@ -13,6 +14,7 @@ const PRESETS = {
   Beginner: { rows: 9, cols: 9, mines: 10 },
   Intermediate: { rows: 16, cols: 16, mines: 40 },
   Expert: { rows: 16, cols: 30, mines: 99 },
+  Challenge: { rows: 20, cols: 30, mines: 130 },
 };
 
 type PresetKey = keyof typeof PRESETS;
@@ -156,6 +158,7 @@ export default function Minesweeper() {
   const [rows, setRows] = useState(PRESETS[preset].rows);
   const [cols, setCols] = useState(PRESETS[preset].cols);
   const [mines, setMines] = useState(PRESETS[preset].mines);
+  const [seed, setSeed] = useState<number | null>(null);
 
   const [hover, setHover] = useState<Location | null>(null);
 
@@ -176,11 +179,32 @@ export default function Minesweeper() {
     setRevealed(0);
   }, [rows, cols, mines]);
 
+  function dailySeedKey(rows: number, cols: number, mines: number) {
+    const now = new Date();
+    const y = now.getUTCFullYear();
+    const m = String(now.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(now.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}|${rows}x${cols}|${mines}`;
+  }
+
+  function seedFromString(str: string): number {
+    // FNV-1a 32-bit
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
   function resetToPreset(k: PresetKey) {
     setPreset(k);
     setRows(PRESETS[k].rows);
     setCols(PRESETS[k].cols);
     setMines(PRESETS[k].mines);
+    if (k === "Challenge") {
+      setSeed(seedFromString(dailySeedKey(rows, cols, mines)));
+    } else setSeed(null);
   }
 
   const handleChord = useCallback((b: Board, loc: Location) => {
@@ -207,7 +231,12 @@ export default function Minesweeper() {
       );
 
       if (firstClick) {
-        addMines(nextBoard, clamp(mines, 1, rows * cols - 9), loc);
+        addMines(
+          nextBoard,
+          clamp(mines, 1, rows * cols - 9),
+          loc,
+          seed ? random(seed) : undefined,
+        );
         setFirstClick(false);
       }
 
@@ -230,7 +259,7 @@ export default function Minesweeper() {
       }
       setBoard(nextBoard);
     },
-    [firstClick, mines, rows, cols, alive, board, won, handleChord],
+    [firstClick, mines, rows, cols, alive, board, won, handleChord, seed],
   );
 
   const handleFlag = useCallback(
