@@ -1,6 +1,9 @@
 import { vi, describe, it, expect, afterEach } from "vitest";
 import type { Board, Location } from "../../src/game/board";
 import {
+  dailySeedKey,
+  dailySeed,
+  seedFromString,
   random,
   clamp,
   makeBoard,
@@ -12,6 +15,57 @@ import {
 } from "../../src/game/board";
 
 afterEach(() => vi.restoreAllMocks());
+
+describe("dailySeedKey", () => {
+  it("Formats seed key correctly", () => {
+    const key1 = dailySeedKey(9, 9, 10);
+    const now = new Date();
+    const y = now.getUTCFullYear();
+    const m = String(now.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(now.getUTCDate()).padStart(2, "0");
+    expect(key1).toBe(`${y}-${m}-${d}|${9}x${9}|${10}`);
+  });
+});
+
+describe("seedFromString", () => {
+  it("Generates seed correctly", () => {
+    const seed = seedFromString("2023-04-01|30x20|130");
+    const seed2 = seedFromString("2025-04-01|30x20|130");
+    expect(seed).toBe(3846270382);
+    expect(seed2).toBe(2565496996);
+  });
+});
+
+describe("dailySeed", () => {
+  it("The same day, same board produces the same seed", () => {
+    const seed1 = dailySeed(9, 9, 10);
+    const seed2 = dailySeed(9, 9, 10);
+    expect(seed1).toBe(seed2);
+  });
+
+  it("different day produces different seed to a reasonable extent", () => {
+    const now = new Date();
+    const seeds = new Set<number>();
+    for (let i = 0; i < 500; i++) {
+      const y = now.getUTCFullYear();
+      const m = String(now.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(now.getUTCDate()).padStart(2, "0");
+      const newSeed = seedFromString(`${y}-${m}-${d}|30x20|130`);
+      expect(seeds).not.include(newSeed);
+      now.setDate(now.getDate() + 1);
+    }
+  });
+
+  it("Produces correct daily seed", () => {
+    const now = new Date();
+    const y = now.getUTCFullYear();
+    const m = String(now.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(now.getUTCDate()).padStart(2, "0");
+    const seed = seedFromString(`${y}-${m}-${d}|30x20|130`);
+    const daily = dailySeed(30, 20, 130);
+    expect(daily).toBe(seed);
+  });
+});
 
 describe("random", () => {
   it("same seed produces same sequence", () => {

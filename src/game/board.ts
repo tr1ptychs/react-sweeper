@@ -21,7 +21,11 @@ export type RNG = () => number;
  * @param {number} mines The number of mines in the board.
  * @returns {string} The seed string.
  */
-function dailySeedKey(rows: number, cols: number, mines: number): string {
+export function dailySeedKey(
+  rows: number,
+  cols: number,
+  mines: number,
+): string {
   const now = new Date();
   const y = now.getUTCFullYear();
   const m = String(now.getUTCMonth() + 1).padStart(2, "0");
@@ -34,7 +38,7 @@ function dailySeedKey(rows: number, cols: number, mines: number): string {
  * @param {string} str The string to convert.
  * @returns {number} The seed value.
  */
-function seedFromString(str: string): number {
+export function seedFromString(str: string): number {
   // FNV-1a 32-bit
   let h = 2166136261 >>> 0;
   for (let i = 0; i < str.length; i++) {
