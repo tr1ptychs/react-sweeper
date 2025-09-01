@@ -335,16 +335,30 @@ export default function Minesweeper() {
           <Counter value={secs} testid="timer" />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {Object.keys(PRESETS).map((k) => (
-            <button
-              key={k}
-              onClick={() => resetToPreset(k as PresetKey)}
-              className={"px-3 py-1 rounded border text-sm bg-black text-white"}
-            >
-              {k}
-            </button>
-          ))}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {Object.keys(PRESETS).map(
+              (k) =>
+                k !== "Daily" && (
+                  <button
+                    key={k}
+                    onClick={() => resetToPreset(k as PresetKey)}
+                    className={
+                      "px-3 py-1 rounded border text-sm bg-black text-white"
+                    }
+                  >
+                    {k}
+                  </button>
+                ),
+            )}
+          </div>
+          <button
+            key={"Daily"}
+            onClick={() => resetToPreset("Daily" as PresetKey)}
+            className={"px-3 py-1 rounded border text-sm bg-black text-white"}
+          >
+            {"Daily"}
+          </button>
         </div>
 
         <Board
