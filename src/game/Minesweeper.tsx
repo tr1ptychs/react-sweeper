@@ -174,6 +174,19 @@ export default function Minesweeper() {
   const secs = useTimer(running, firstClick);
 
   useEffect(() => {
+    if (location.pathname.endsWith("/daily")) {
+      setPreset("Daily");
+      const r = PRESETS["Daily"].rows;
+      const c = PRESETS["Daily"].cols;
+      const m = PRESETS["Daily"].mines;
+      setRows(r);
+      setCols(c);
+      setMines(m);
+      setSeed(dailySeed(r, c, m));
+    }
+  }, []);
+
+  useEffect(() => {
     setBoard(makeBoard(rows, cols));
     setFirstClick(true);
     setAlive(true);
@@ -186,8 +199,15 @@ export default function Minesweeper() {
     setCols(PRESETS[k].cols);
     setMines(PRESETS[k].mines);
     if (k === "Daily") {
-      setSeed(dailySeed(rows, cols, mines));
-    } else setSeed(null);
+      const r = PRESETS[k].rows,
+        c = PRESETS[k].cols,
+        m = PRESETS[k].mines;
+      setSeed(dailySeed(r, c, m));
+      history.replaceState(null, "", `/daily`);
+    } else {
+      setSeed(null);
+      history.replaceState(null, "", "/");
+    }
   }
 
   const handleChord = useCallback((b: Board, loc: Location) => {
