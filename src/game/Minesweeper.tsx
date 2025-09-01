@@ -34,7 +34,7 @@ function Cell({
   testid: string;
 }) {
   const baseClassName =
-    "w-8 h-8 flex items-center justify-center border border-slate-950 select-none text-xl font-bold";
+    "w-9 h-9 flex items-center justify-center border border-slate-950 select-none text-xl font-bold";
   const adjColors = [
     "",
     "text-blue-700",
@@ -87,7 +87,7 @@ function Board({
     <div
       className="inline-grid"
       data-testid="board"
-      style={{ gridTemplateColumns: `repeat(${cols}, 2rem)` }}
+      style={{ gridTemplateColumns: `repeat(${cols}, 2.25rem)` }}
     >
       {board.map((row, r) =>
         row.map((cell, c) => (
