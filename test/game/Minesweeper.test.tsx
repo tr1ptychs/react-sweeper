@@ -333,3 +333,28 @@ describe("Minesweeper", () => {
     expect(before).toBe(after);
   });
 });
+
+describe("Daily preset", () => {
+  it("Sets correct mines and dimension when daily clicked", async () => {
+    const user = userEvent.setup();
+    render(<Minesweeper />);
+    await user.click(screen.getByRole("button", { name: "Daily" }));
+    expect(screen.getByTestId("cell-19-29")).toBeInTheDocument();
+    expect(screen.queryByTestId("cell-20-29")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("cell-19-30")).not.toBeInTheDocument();
+    expect(window.location.pathname).toBe("/daily");
+    await user.click(screen.getByRole("button", { name: "Beginner" }));
+    expect(window.location.pathname).toBe("/");
+  });
+  it("Sets correct mines and dimension when navigating to /daily", async () => {
+    window.history.pushState({}, "", "/daily");
+    const user = userEvent.setup();
+    render(<Minesweeper />);
+    expect(screen.getByTestId("cell-19-29")).toBeInTheDocument();
+    expect(screen.queryByTestId("cell-20-29")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("cell-19-30")).not.toBeInTheDocument();
+    expect(window.location.pathname).toBe("/daily");
+    await user.click(screen.getByRole("button", { name: "Beginner" }));
+    expect(window.location.pathname).toBe("/");
+  });
+});
