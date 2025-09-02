@@ -353,6 +353,7 @@ export default function Minesweeper() {
             )}
           </div>
           <button
+            title={"Set seed game, new seed every day at UTC 00:00"}
             key={"Daily"}
             onClick={() => resetToPreset("Daily" as PresetKey)}
             className={"px-3 py-1 rounded border text-sm bg-black text-white"}
