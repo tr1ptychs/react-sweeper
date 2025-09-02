@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Cell, Board, Location } from "./board.ts";
 import {
+  dailySeed,
+  random,
   clamp,
   makeBoard,
   addMines,
@@ -13,6 +15,7 @@ const PRESETS = {
   Beginner: { rows: 9, cols: 9, mines: 10 },
   Intermediate: { rows: 16, cols: 16, mines: 40 },
   Expert: { rows: 16, cols: 30, mines: 99 },
+  Daily: { rows: 20, cols: 30, mines: 130 },
 };
 
 type PresetKey = keyof typeof PRESETS;
@@ -31,7 +34,7 @@ function Cell({
   testid: string;
 }) {
   const baseClassName =
-    "w-10 h-10 flex items-center justify-center border border-slate-950 select-none text-xl font-bold";
+    "w-9 h-9 flex items-center justify-center border border-slate-950 select-none text-xl font-bold";
   const adjColors = [
     "",
     "text-blue-700",
@@ -84,7 +87,7 @@ function Board({
     <div
       className="inline-grid"
       data-testid="board"
-      style={{ gridTemplateColumns: `repeat(${cols}, 2.5rem)` }}
+      style={{ gridTemplateColumns: `repeat(${cols}, 2.25rem)` }}
     >
       {board.map((row, r) =>
         row.map((cell, c) => (
@@ -156,6 +159,7 @@ export default function Minesweeper() {
   const [rows, setRows] = useState(PRESETS[preset].rows);
   const [cols, setCols] = useState(PRESETS[preset].cols);
   const [mines, setMines] = useState(PRESETS[preset].mines);
+  const [seed, setSeed] = useState<number | null>(null);
 
   const [hover, setHover] = useState<Location | null>(null);
 
@@ -164,10 +168,23 @@ export default function Minesweeper() {
   const [alive, setAlive] = useState(true);
   const [revealed, setRevealed] = useState(0);
   const totalSafe = rows * cols - mines;
-  const won = alive && revealed === totalSafe && totalSafe > 0;
+  const won = alive && revealed === totalSafe;
 
   const running = alive && !firstClick && !won;
   const secs = useTimer(running, firstClick);
+
+  useEffect(() => {
+    if (location.pathname.endsWith("/daily")) {
+      setPreset("Daily");
+      const r = PRESETS["Daily"].rows;
+      const c = PRESETS["Daily"].cols;
+      const m = PRESETS["Daily"].mines;
+      setRows(r);
+      setCols(c);
+      setMines(m);
+      setSeed(dailySeed(r, c, m));
+    }
+  }, []);
 
   useEffect(() => {
     setBoard(makeBoard(rows, cols));
@@ -181,6 +198,16 @@ export default function Minesweeper() {
     setRows(PRESETS[k].rows);
     setCols(PRESETS[k].cols);
     setMines(PRESETS[k].mines);
+    if (k === "Daily") {
+      const r = PRESETS[k].rows,
+        c = PRESETS[k].cols,
+        m = PRESETS[k].mines;
+      setSeed(dailySeed(r, c, m));
+      history.replaceState(null, "", `/daily`);
+    } else {
+      setSeed(null);
+      history.replaceState(null, "", "/");
+    }
   }
 
   const handleChord = useCallback((b: Board, loc: Location) => {
@@ -207,7 +234,12 @@ export default function Minesweeper() {
       );
 
       if (firstClick) {
-        addMines(nextBoard, clamp(mines, 1, rows * cols - 9), loc);
+        addMines(
+          nextBoard,
+          clamp(mines, 1, rows * cols - 9),
+          loc,
+          seed ? random(seed) : undefined,
+        );
         setFirstClick(false);
       }
 
@@ -230,7 +262,7 @@ export default function Minesweeper() {
       }
       setBoard(nextBoard);
     },
-    [firstClick, mines, rows, cols, alive, board, won, handleChord],
+    [firstClick, mines, rows, cols, alive, board, won, handleChord, seed],
   );
 
   const handleFlag = useCallback(
@@ -303,16 +335,31 @@ export default function Minesweeper() {
           <Counter value={secs} testid="timer" />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {Object.keys(PRESETS).map((k) => (
-            <button
-              key={k}
-              onClick={() => resetToPreset(k as PresetKey)}
-              className={"px-3 py-1 rounded border text-sm bg-black text-white"}
-            >
-              {k}
-            </button>
-          ))}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {Object.keys(PRESETS).map(
+              (k) =>
+                k !== "Daily" && (
+                  <button
+                    key={k}
+                    onClick={() => resetToPreset(k as PresetKey)}
+                    className={
+                      "px-3 py-1 rounded border text-sm bg-black text-white"
+                    }
+                  >
+                    {k}
+                  </button>
+                ),
+            )}
+          </div>
+          <button
+            title={"Set seed game, new seed every day at UTC 00:00"}
+            key={"Daily"}
+            onClick={() => resetToPreset("Daily" as PresetKey)}
+            className={"px-3 py-1 rounded border text-sm bg-black text-white"}
+          >
+            {"Daily"}
+          </button>
         </div>
 
         <Board
