@@ -28,7 +28,7 @@ function Cell({
   onFlag,
   onPress,
   testid,
-  darkened,
+  lightened,
 }: {
   cell: Cell;
   onHover: () => void;
@@ -36,7 +36,7 @@ function Cell({
   onFlag: () => void;
   onPress: () => void;
   testid: string;
-  darkened: boolean;
+  lightened: boolean;
 }) {
   const baseClassName =
     "w-9 h-9 flex items-center justify-center border border-slate-950 select-none text-xl font-bold";
@@ -57,7 +57,7 @@ function Cell({
     <div
       key={"id"}
       id={testid}
-      className={`${baseClassName} ${cell.revealed ? "bg-gray-100 " + adjColors[cell.adjacentMines] : darkened ? "bg-gray-500" : "bg-gray-400"}`}
+      className={`${baseClassName} ${cell.revealed ? "bg-gray-100 " + adjColors[cell.adjacentMines] : lightened ? "bg-gray-100" : "bg-gray-400"}`}
       data-testid={testid}
       onPointerEnter={onHover}
       onPointerUp={onReveal}
@@ -116,7 +116,7 @@ function Board({
             onReveal={() => onReveal({ row: r, col: c })}
             onFlag={() => onFlag({ row: r, col: c })}
             onPress={() => setPressing()}
-            darkened={pressedSet.has(`${r}-${c}`)}
+            lightened={pressedSet.has(`${r}-${c}`)}
             testid={`cell-${r}-${c}`}
           />
         )),
@@ -213,6 +213,7 @@ export default function Minesweeper() {
     const base = board[row][col];
 
     const key = (r: number, c: number) => `${r}-${c}`;
+    if (base.flagged) return set;
     if (!base.revealed) {
       set.add(key(row, col));
       return set;
