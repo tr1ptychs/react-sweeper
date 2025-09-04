@@ -21,7 +21,6 @@ A fast, deterministic minesweeper built with React + TypeScript. Features first-
 
 ## Running Locally
 
-ezpz. no lemon squeezy required.
 ```
 # install deps
 npm i
