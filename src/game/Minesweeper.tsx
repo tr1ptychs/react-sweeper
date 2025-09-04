@@ -9,6 +9,7 @@ import {
   reveal,
   chord,
   showMines,
+  neighbors,
 } from "./board.ts";
 
 const PRESETS = {
@@ -25,16 +26,21 @@ function Cell({
   onHover,
   onReveal,
   onFlag,
+  onPress,
   testid,
+  darkened,
 }: {
   cell: Cell;
   onHover: () => void;
   onReveal: () => void;
   onFlag: () => void;
+  onPress: () => void;
   testid: string;
+  darkened: boolean;
 }) {
   const baseClassName =
     "w-9 h-9 flex items-center justify-center border border-slate-950 select-none text-xl font-bold";
+  // Stryker disable next-line ArrayDeclaration
   const adjColors = [
     "",
     "text-blue-700",
@@ -46,13 +52,19 @@ function Cell({
     "text-gray-700",
     "text-black",
   ];
+
   return (
     <div
       key={"id"}
-      className={`${baseClassName} ${cell.revealed ? "bg-gray-100 " + adjColors[cell.adjacentMines] : "bg-gray-400 hover:bg-gray-500"}`}
+      id={testid}
+      className={`${baseClassName} ${cell.revealed ? "bg-gray-100 " + adjColors[cell.adjacentMines] : darkened ? "bg-gray-500" : "bg-gray-400"}`}
       data-testid={testid}
       onPointerEnter={onHover}
-      onClick={onReveal}
+      onPointerUp={onReveal}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        onPress();
+      }}
       onContextMenu={(e) => {
         e.preventDefault();
         onFlag();
@@ -76,11 +88,15 @@ function Board({
   onHover,
   onReveal,
   onFlag,
+  setPressing,
+  pressedSet,
 }: {
   board: Board;
   onHover: (loc: Location) => void;
   onReveal: (loc: Location) => void;
   onFlag: (loc: Location) => void;
+  setPressing: () => void;
+  pressedSet: Set<string>;
 }) {
   const cols = board[0].length;
   return (
@@ -99,6 +115,8 @@ function Board({
             }}
             onReveal={() => onReveal({ row: r, col: c })}
             onFlag={() => onFlag({ row: r, col: c })}
+            onPress={() => setPressing()}
+            darkened={pressedSet.has(`${r}-${c}`)}
             testid={`cell-${r}-${c}`}
           />
         )),
@@ -173,6 +191,43 @@ export default function Minesweeper() {
   const running = alive && !firstClick && !won;
   const secs = useTimer(running, firstClick);
 
+  const [pressing, setPressing] = useState(false);
+
+  // clear press on mouse/touch release anywhere
+  useEffect(() => {
+    if (!pressing) return;
+    const up = () => setPressing(false);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    return () => {
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+  }, [pressing]);
+
+  const pressedSet = useMemo(() => {
+    const set = new Set<string>();
+    if (!pressing || !hover) return set;
+
+    const { row, col } = hover;
+    const base = board[row][col];
+
+    const key = (r: number, c: number) => `${r}-${c}`;
+    if (!base.revealed) {
+      set.add(key(row, col));
+      return set;
+    }
+    if (base.adjacentMines > 0) {
+      for (const { row: nr, col: nc } of neighbors(board, {
+        row: row,
+        col: col,
+      })) {
+        const n = board[nr][nc];
+        if (!n.revealed && !n.flagged) set.add(key(nr, nc));
+      }
+    }
+    return set;
+  }, [pressing, hover, board]);
   useEffect(() => {
     if (location.pathname.endsWith("/daily")) {
       setPreset("Daily");
@@ -291,10 +346,11 @@ export default function Minesweeper() {
   useEffect(() => {
     function onKeyUp(e: KeyboardEvent) {
       const t = e.target as HTMLElement | null;
-      if (!hover || !t) return;
+      if (!hover || !t || !alive) return;
       if (e.key === "q") {
         e.preventDefault();
         handleReveal(hover);
+        setPressing(false);
       }
     }
     window.addEventListener("keyup", onKeyUp);
@@ -304,11 +360,14 @@ export default function Minesweeper() {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const t = e.target as HTMLElement | null;
-      if (!hover || !t) return;
+      if (!hover || !t || !alive) return;
 
       if (e.key === "w") {
         e.preventDefault();
         handleFlag(hover);
+      } else if (e.key === "q") {
+        e.preventDefault();
+        setPressing(true);
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -367,6 +426,10 @@ export default function Minesweeper() {
           onReveal={handleReveal}
           onFlag={handleFlag}
           onHover={setHover}
+          setPressing={() => {
+            setPressing(true);
+          }}
+          pressedSet={pressedSet}
         />
       </div>
     </div>
