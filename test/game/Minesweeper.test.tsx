@@ -54,7 +54,10 @@ describe("Minesweeper", () => {
     const grid = screen.getByTestId("board");
     const firstCell = grid.firstElementChild as HTMLElement;
 
-    await user.click(firstCell);
+    await user.pointer([
+      { keys: "[MouseLeft>]", target: firstCell },
+      { keys: "[/MouseLeft]", target: firstCell },
+    ]);
     expect(boardFns.addMines).toHaveBeenCalledTimes(1);
     expect(boardFns.reveal).toHaveBeenCalledTimes(1);
   });
@@ -66,9 +69,15 @@ describe("Minesweeper", () => {
     const firstCell = grid.firstElementChild as HTMLElement;
     const secondCell = screen.getByTestId("cell-8-8");
 
-    await user.click(firstCell);
+    await user.pointer([
+      { keys: "[MouseLeft>]", target: firstCell },
+      { keys: "[/MouseLeft]", target: firstCell },
+    ]);
     const before = vi.mocked(boardFns).addMines.mock.calls.length;
-    await user.click(secondCell);
+    await user.pointer([
+      { keys: "[MouseLeft>]", target: secondCell },
+      { keys: "[/MouseLeft]", target: secondCell },
+    ]);
     const after = vi.mocked(boardFns).addMines.mock.calls.length;
     expect(before).toBe(after);
   });
@@ -92,15 +101,16 @@ describe("Minesweeper", () => {
     const second = first.nextElementSibling as HTMLElement;
 
     await act(async () => {
-      fireEvent.click(first);
-
+      fireEvent.pointerDown(first);
+      fireEvent.pointerUp(first);
       await vi.advanceTimersByTimeAsync(3000);
     });
     expect(screen.getByTestId("timer")).toHaveTextContent("003");
 
     await act(async () => {
       vi.mocked(boardFns.reveal).mockImplementationOnce(() => -1);
-      fireEvent.click(second);
+      fireEvent.pointerDown(second);
+      fireEvent.pointerUp(second);
 
       await vi.runOnlyPendingTimersAsync();
     });
@@ -122,9 +132,9 @@ describe("Minesweeper", () => {
     const cell = grid.firstElementChild as HTMLElement;
 
     await act(async () => {
-      fireEvent.click(cell);
+      fireEvent.pointerDown(cell);
+      fireEvent.pointerUp(cell);
       await vi.advanceTimersByTimeAsync(2000);
-      fireEvent.contextMenu(cell);
       fireEvent.click(screen.getByRole("button", { name: "😬" }));
     });
 
