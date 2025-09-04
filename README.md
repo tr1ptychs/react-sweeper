@@ -9,7 +9,7 @@ A fast, deterministic minesweeper built with React + TypeScript. Features first-
 - **First-click safety:** First clicked cell and surrounding cells will never be a mine.
 - **Chording:** Click a revealed number to reveal its remaining neighbors when number of neighboringe flags matches the number.
 - **Keyboard play with Q/W:** Playing on your laptop? Use `q` for left click, and `w` for right click.
-- **Daily seeded challenge at `/daily`:** Addicted to the daily game modes? We have one too. Larger-than-expert board with slightly higher mine density, on a set seed. 
+- **Daily seeded challenge at `/daily`:** Addicted to the daily game modes? We have one too. Larger-than-expert board with slightly higher mine density, on a set seed that changes every UTC 00:00.
 - **Performance:** Iterative reveal for no deep recursion
 
 ## Controls
