@@ -271,7 +271,7 @@ export default function Minesweeper() {
 
   const pressedSet = useMemo(() => {
     const set = new Set<string>();
-    if (!pressing || !hover) return set;
+    if (!pressing || !hover || !running) return set;
 
     const { row, col } = hover;
     const base = board[row][col];
