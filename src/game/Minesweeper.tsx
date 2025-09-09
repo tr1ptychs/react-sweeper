@@ -203,7 +203,6 @@ export default function Minesweeper() {
   const [dailyScores, setDailyScores] = useState<Daily[]>(() => {
     try {
       const saved = localStorage.getItem("dailyScores");
-      console.log(saved);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -238,7 +237,6 @@ export default function Minesweeper() {
       if (todayDaily) {
         todayDaily.time += secs;
         todayDaily.deaths += 1;
-        console.log(todayDaily);
       }
     } else if (alive && won && preset === "Daily" && !hasWonTodayDaily) {
       const todayDaily = newDailyScores.find(
@@ -247,7 +245,6 @@ export default function Minesweeper() {
       if (todayDaily) {
         todayDaily.won = true;
         todayDaily.time += secs;
-        console.log(todayDaily);
       }
     }
     setDailyScores(newDailyScores);
@@ -292,7 +289,8 @@ export default function Minesweeper() {
       }
     }
     return set;
-  }, [pressing, hover, board]);
+  }, [pressing, hover, board, running]);
+
   useEffect(() => {
     if (location.pathname.endsWith("/daily")) {
       setPreset("Daily");
@@ -482,7 +480,7 @@ export default function Minesweeper() {
             )}
           </div>
           <div className="flex gap-5">
-            {todayStats ? (
+            {todayStats && preset === "Daily" && (
               <div className="flex flex-col text-left">
                 <span className="text-sm text-white">
                   {todayStats.won
@@ -491,21 +489,13 @@ export default function Minesweeper() {
                       ? "In progress..."
                       : "Not Started"}
                 </span>
-                {todayStats.deaths ? (
+                {todayStats.deaths > 0 && (
                   <span className="text-sm text-white">
                     {todayStats.deaths
                       ? `${todayStats.deaths} deaths in ${todayStats.time} total seconds`
                       : ""}
                   </span>
-                ) : (
-                  <> </>
                 )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <span className="text-sm text-white">
-                  Daily Game Not Started
-                </span>
               </div>
             )}
             <button
