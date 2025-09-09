@@ -31,6 +31,7 @@ type Daily = {
 function Cell({
   cell,
   onHover,
+  onLeave,
   onReveal,
   onFlag,
   onPress,
@@ -39,6 +40,7 @@ function Cell({
 }: {
   cell: Cell;
   onHover: () => void;
+  onLeave: () => void;
   onReveal: () => void;
   onFlag: () => void;
   onPress: () => void;
@@ -67,6 +69,7 @@ function Cell({
       className={`${baseClassName} ${cell.revealed ? "bg-gray-100 " + adjColors[cell.adjacentMines] : lightened ? "bg-gray-100" : "bg-gray-400"}`}
       data-testid={testid}
       onPointerEnter={onHover}
+      onPointerLeave={onLeave}
       onPointerUp={onReveal}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
@@ -93,6 +96,7 @@ function Cell({
 function Board({
   board,
   onHover,
+  onLeave,
   onReveal,
   onFlag,
   setPressing,
@@ -100,6 +104,7 @@ function Board({
 }: {
   board: Board;
   onHover: (loc: Location) => void;
+  onLeave: () => void;
   onReveal: (loc: Location) => void;
   onFlag: (loc: Location) => void;
   setPressing: () => void;
@@ -119,6 +124,9 @@ function Board({
             cell={cell}
             onHover={() => {
               onHover({ row: r, col: c });
+            }}
+            onLeave={() => {
+              onLeave();
             }}
             onReveal={() => onReveal({ row: r, col: c })}
             onFlag={() => onFlag({ row: r, col: c })}
@@ -514,6 +522,9 @@ export default function Minesweeper() {
           onReveal={handleReveal}
           onFlag={handleFlag}
           onHover={setHover}
+          onLeave={() => {
+            setHover(null);
+          }}
           setPressing={() => {
             setPressing(true);
           }}
