@@ -21,6 +21,13 @@ const PRESETS = {
 
 type PresetKey = keyof typeof PRESETS;
 
+type Daily = {
+  deaths: number;
+  time: number;
+  won: boolean;
+  date: string;
+};
+
 function Cell({
   cell,
   onHover,
@@ -192,6 +199,63 @@ export default function Minesweeper() {
   const secs = useTimer(running, firstClick);
 
   const [pressing, setPressing] = useState(false);
+
+  const [dailyScores, setDailyScores] = useState<Daily[]>(() => {
+    try {
+      const saved = localStorage.getItem("dailyScores");
+      console.log(saved);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const hasTodayDaily = dailyScores.find(
+    (score) => score.date === new Date().toISOString().slice(0, 10),
+  );
+
+  if (!hasTodayDaily) {
+    const newDailyScores = [...dailyScores];
+    newDailyScores.push({
+      date: new Date().toISOString().slice(0, 10),
+      won: false,
+      time: 0,
+      deaths: 0,
+    });
+    setDailyScores(newDailyScores);
+  }
+
+  useEffect(() => {
+    const hasWonTodayDaily = dailyScores.find(
+      (score) => score.date === new Date().toISOString().slice(0, 10),
+    )?.won;
+
+    const newDailyScores = [...dailyScores];
+    if (!alive && preset === "Daily" && !hasWonTodayDaily) {
+      const todayDaily = newDailyScores.find(
+        (score) => score.date === new Date().toISOString().slice(0, 10),
+      );
+      if (todayDaily) {
+        todayDaily.time += secs;
+        todayDaily.deaths += 1;
+        console.log(todayDaily);
+      }
+    } else if (alive && won && preset === "Daily" && !hasWonTodayDaily) {
+      const todayDaily = newDailyScores.find(
+        (score) => score.date === new Date().toISOString().slice(0, 10),
+      );
+      if (todayDaily) {
+        todayDaily.won = true;
+        todayDaily.time += secs;
+        console.log(todayDaily);
+      }
+    }
+    setDailyScores(newDailyScores);
+  }, [alive, won]);
+
+  useEffect(() => {
+    localStorage.setItem("dailyScores", JSON.stringify(dailyScores));
+  }, [dailyScores]);
 
   // clear press on mouse/touch release anywhere
   useEffect(() => {
@@ -386,6 +450,11 @@ export default function Minesweeper() {
       : firstClick
         ? "ready"
         : "hmm";
+
+  const todayStats = dailyScores.find(
+    (score) => score.date === new Date().toISOString().slice(0, 10),
+  ) as Daily;
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4">
       <div className="bg-neutral-800 border border-stone-700 rounded-2xl shadow-xl p-4 space-y-3">
@@ -412,14 +481,42 @@ export default function Minesweeper() {
                 ),
             )}
           </div>
-          <button
-            title={"Set seed game, new seed every day at UTC 00:00"}
-            key={"Daily"}
-            onClick={() => resetToPreset("Daily" as PresetKey)}
-            className={"px-3 py-1 rounded border text-sm bg-black text-white"}
-          >
-            {"Daily"}
-          </button>
+          <div className="flex gap-5">
+            {todayStats ? (
+              <div className="flex flex-col text-left">
+                <span className="text-sm text-white">
+                  {todayStats.won
+                    ? "Won!"
+                    : todayStats.deaths
+                      ? "In progress..."
+                      : "Not Started"}
+                </span>
+                {todayStats.deaths ? (
+                  <span className="text-sm text-white">
+                    {todayStats.deaths
+                      ? `${todayStats.deaths} deaths in ${todayStats.time} total seconds`
+                      : ""}
+                  </span>
+                ) : (
+                  <> </>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <span className="text-sm text-white">
+                  Daily Game Not Started
+                </span>
+              </div>
+            )}
+            <button
+              title={"Set seed game, new seed every day at UTC 00:00"}
+              key={"Daily"}
+              onClick={() => resetToPreset("Daily" as PresetKey)}
+              className={"px-3 py-1 rounded border text-sm bg-black text-white"}
+            >
+              {"Daily"}
+            </button>
+          </div>
         </div>
 
         <Board
