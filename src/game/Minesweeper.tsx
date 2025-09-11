@@ -461,6 +461,27 @@ export default function Minesweeper() {
     (score) => score.date === new Date().toISOString().slice(0, 10),
   ) as Daily;
 
+  const handleShareDailyWin = async () => {
+    const text = `⏰: ${todayStats.time}\n💀: ${todayStats.deaths}`;
+    const date = new Date().toLocaleDateString();
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Daily Minesweeper Challenge: ${date}`,
+          text,
+          url: "https://react-sweeper-snowy.vercel.app/daily",
+        });
+      } else {
+        await navigator.clipboard.writeText(
+          `${text} ${"https://react-sweeper-snowy.vercel.app/daily"}`,
+        );
+      }
+    } catch {
+      // user canceled share;
+    }
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4">
       <div className="bg-neutral-800 border border-stone-700 rounded-2xl shadow-xl p-4 space-y-3">
@@ -489,22 +510,23 @@ export default function Minesweeper() {
           </div>
           <div className="flex gap-5">
             {todayStats && preset === "Daily" && (
-              <div className="flex flex-col text-left">
-                <span className="text-sm text-white">
-                  {todayStats.won
-                    ? "Won!"
-                    : todayStats.deaths
-                      ? "In progress..."
-                      : "Not Started"}
-                </span>
-                {todayStats.deaths > 0 && (
-                  <span className="text-sm text-white">
-                    {todayStats.deaths
-                      ? `${todayStats.deaths} deaths in ${todayStats.time} total seconds`
-                      : ""}
-                  </span>
+              <>
+                {todayStats.won && (
+                  <button
+                    onClick={handleShareDailyWin}
+                    className="px-3 py-1.5 rounded border text-white"
+                    aria-label="Share today's Daily board"
+                  >
+                    Share
+                  </button>
                 )}
-              </div>
+                <div className="flex flex-col">
+                  <div className="text-sm text-white text-left">
+                    {`⏰: ${todayStats.time}`}
+                  </div>
+                  <div className="text-sm text-white text-left">{`💀: ${todayStats.deaths}`}</div>
+                </div>
+              </>
             )}
             <button
               title={"Set seed game, new seed every day at UTC 00:00"}
