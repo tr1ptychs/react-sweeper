@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import type { Cell, Board, Location } from "./board.ts";
 import {
   dailySeed,
@@ -187,6 +187,20 @@ function useTimer(running: boolean, resetDep: boolean) {
   return secs;
 }
 
+function Toast({ show, message }: { show: boolean; message: string }) {
+  return (
+    <div
+      aria-live="polite"
+      role="status"
+      className={`fixed left-1/2 top-6 -translate-x-1/2 z-50
+                  px-4 py-2 rounded-lg bg-black text-white text-sm shadow
+                  transition-opacity duration-0 ${show ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+    >
+      {message}
+    </div>
+  );
+}
+
 export default function Minesweeper() {
   const [preset, setPreset] = useState<PresetKey>("Beginner");
   const [rows, setRows] = useState(PRESETS[preset].rows);
@@ -207,6 +221,21 @@ export default function Minesweeper() {
   const secs = useTimer(running, firstClick);
 
   const [pressing, setPressing] = useState(false);
+
+  const [toast, setToast] = useState<{ show: boolean; msg: string }>({
+    show: false,
+    msg: "",
+  });
+  const toastTimer = useRef<number | null>(null);
+
+  function notify(msg: string, ms = 1800) {
+    setToast({ show: true, msg });
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(
+      () => setToast({ show: false, msg: "" }),
+      ms,
+    );
+  }
 
   const [dailyScores, setDailyScores] = useState<Daily[]>(() => {
     try {
@@ -473,12 +502,14 @@ export default function Minesweeper() {
           url: "https://react-sweeper-snowy.vercel.app/daily",
         });
       } else {
+        // if browser does not have share functionality (looking at you, firefox) copy to clipboard instead
         await navigator.clipboard.writeText(
-          `${text} ${"https://react-sweeper-snowy.vercel.app/daily"}`,
+          `Daily Minesweeper Challenge: ${date}\n${"https://react-sweeper-snowy.vercel.app/daily"}\n${text}`,
         );
+        notify("Results copied to clipboard");
       }
     } catch {
-      // user canceled share;
+      // Silently ignore if user decides not to share
     }
   };
 
@@ -491,6 +522,7 @@ export default function Minesweeper() {
           <Counter value={secs} testid="timer" />
         </div>
 
+        <Toast show={toast.show} message={toast.msg} />
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             {Object.keys(PRESETS).map(
