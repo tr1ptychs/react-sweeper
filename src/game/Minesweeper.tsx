@@ -66,7 +66,7 @@ function Cell({
     <div
       key={"id"}
       id={testid}
-      className={`${baseClassName} ${cell.revealed ? "bg-gray-100 " + adjColors[cell.adjacentMines] : lightened ? "bg-gray-100" : "bg-gray-400 border-3 b border-b-gray-800 border-r-gray-800 border-t-gray-100 border-l-gray-100"}`}
+      className={`${baseClassName} ${cell.revealed ? "bg-gray-200 " + adjColors[cell.adjacentMines] : lightened ? "bg-gray-200" : "bg-gray-400 border-3 b border-b-gray-700 border-r-gray-700 border-t-gray-300 border-l-gray-300"}`}
       data-testid={testid}
       onPointerEnter={onHover}
       onPointerLeave={onLeave}
