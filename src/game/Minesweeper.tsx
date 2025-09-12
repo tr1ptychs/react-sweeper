@@ -48,7 +48,7 @@ function Cell({
   lightened: boolean;
 }) {
   const baseClassName =
-    "w-9 h-9 flex items-center justify-center select-none text-xl font-bold";
+    "w-9 h-9 flex items-center justify-center select-none text-2xl font-bold";
   // Stryker disable next-line ArrayDeclaration
   const adjColors = [
     "",
