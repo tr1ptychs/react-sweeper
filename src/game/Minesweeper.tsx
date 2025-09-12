@@ -48,7 +48,7 @@ function Cell({
   lightened: boolean;
 }) {
   const baseClassName =
-    "w-9 h-9 flex items-center justify-center border border-slate-950 select-none text-xl font-bold";
+    "w-9 h-9 flex items-center justify-center select-none text-xl font-bold";
   // Stryker disable next-line ArrayDeclaration
   const adjColors = [
     "",
@@ -66,7 +66,7 @@ function Cell({
     <div
       key={"id"}
       id={testid}
-      className={`${baseClassName} ${cell.revealed ? "bg-gray-100 " + adjColors[cell.adjacentMines] : lightened ? "bg-gray-100" : "bg-gray-400"}`}
+      className={`${baseClassName} ${cell.revealed ? "bg-gray-100 " + adjColors[cell.adjacentMines] : lightened ? "bg-gray-100" : "bg-gray-400 border-3 b border-b-gray-800 border-r-gray-800 border-t-gray-100 border-l-gray-100"}`}
       data-testid={testid}
       onPointerEnter={onHover}
       onPointerLeave={onLeave}
@@ -113,7 +113,7 @@ function Board({
   const cols = board[0].length;
   return (
     <div
-      className="inline-grid"
+      className="inline-grid gap-0.5"
       data-testid="board"
       style={{ gridTemplateColumns: `repeat(${cols}, 2.25rem)` }}
     >
@@ -495,21 +495,12 @@ export default function Minesweeper() {
     const date = new Date().toLocaleDateString();
 
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `Daily Minesweeper Challenge: ${date}`,
-          text,
-          url: "https://react-sweeper-snowy.vercel.app/daily",
-        });
-      } else {
-        // if browser does not have share functionality (looking at you, firefox) copy to clipboard instead
-        await navigator.clipboard.writeText(
-          `Daily Minesweeper Challenge: ${date}\n${"https://react-sweeper-snowy.vercel.app/daily"}\n${text}`,
-        );
-        notify("Results copied to clipboard");
-      }
+      await navigator.clipboard.writeText(
+        `Daily Minesweeper Challenge: ${date}\n${"https://react-sweeper-snowy.vercel.app/daily"}\n${text}`,
+      );
+      notify("Results copied to clipboard");
     } catch {
-      // Silently ignore if user decides not to share
+      notify("Failed to write to clipboard");
     }
   };
 
