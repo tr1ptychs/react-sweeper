@@ -70,7 +70,11 @@ function Cell({
       data-testid={testid}
       onPointerEnter={onHover}
       onPointerLeave={onLeave}
-      onPointerUp={onReveal}
+      onPointerUp={(e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        onReveal();
+      }}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
         onPress();
