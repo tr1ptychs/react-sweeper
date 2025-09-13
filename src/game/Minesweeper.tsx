@@ -116,6 +116,7 @@ function Board({
       className="inline-grid gap-0.5"
       data-testid="board"
       style={{ gridTemplateColumns: `repeat(${cols}, 2.25rem)` }}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {board.map((row, r) =>
         row.map((cell, c) => (
