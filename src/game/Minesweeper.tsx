@@ -313,7 +313,7 @@ export default function Minesweeper() {
 
   const pressedSet = useMemo(() => {
     const set = new Set<string>();
-    if (!pressing || !hover || !running) return set;
+    if (!pressing || !hover || !alive || won) return set;
 
     const { row, col } = hover;
     const base = board[row][col];
@@ -334,7 +334,7 @@ export default function Minesweeper() {
       }
     }
     return set;
-  }, [pressing, hover, board, running]);
+  }, [pressing, hover, board, alive, won]);
 
   useEffect(() => {
     if (location.pathname.endsWith("/daily")) {
