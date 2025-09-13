@@ -446,11 +446,11 @@ export default function Minesweeper() {
   useEffect(() => {
     function onKeyUp(e: KeyboardEvent) {
       const t = e.target as HTMLElement | null;
-      if (!hover || !t || !alive) return;
       if (e.key === "q") {
+        setPressing(false);
+        if (!hover || !t || !alive) return;
         e.preventDefault();
         handleReveal(hover);
-        setPressing(false);
       }
     }
     window.addEventListener("keyup", onKeyUp);

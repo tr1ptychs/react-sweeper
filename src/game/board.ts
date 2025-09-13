@@ -253,7 +253,7 @@ export function chord(b: Board, loc: Location): number {
 export function showMines(board: Board): void {
   board.forEach((row) => {
     row.forEach((cell) => {
-      if (cell.mine) {
+      if (cell.mine && !cell.flagged) {
         cell.revealed = true;
       }
     });
