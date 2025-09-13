@@ -48,7 +48,7 @@ function Cell({
   lightened: boolean;
 }) {
   const baseClassName =
-    "w-9 h-9 flex items-center justify-center select-none text-2xl font-bold";
+    "w-full h-full flex items-center justify-center select-none text-2xl font-bold";
   // Stryker disable next-line ArrayDeclaration
   const adjColors = [
     "",
@@ -66,8 +66,7 @@ function Cell({
     <div
       key={"id"}
       id={testid}
-      className={`${baseClassName} ${cell.revealed ? "bg-gray-200 " + adjColors[cell.adjacentMines] : lightened ? "bg-gray-200" : "bg-gray-400 border-3 b border-b-gray-700 border-r-gray-700 border-t-gray-300 border-l-gray-300"}`}
-      data-testid={testid}
+      className={"w-9 h-9 border-1 border-gray-950"}
       onPointerEnter={onHover}
       onPointerLeave={onLeave}
       onPointerUp={(e) => {
@@ -83,15 +82,20 @@ function Cell({
         onFlag();
       }}
     >
-      {cell.revealed
-        ? cell.mine
-          ? "💣"
-          : cell.adjacentMines > 0
-            ? cell.adjacentMines
-            : ""
-        : cell.flagged
-          ? "🚩"
-          : ""}
+      <div
+        className={`${baseClassName} ${cell.revealed ? "bg-gray-200 " + adjColors[cell.adjacentMines] : lightened ? "bg-gray-200" : "bg-gray-400 border-3 b border-b-gray-700 border-r-gray-700 border-t-gray-300 border-l-gray-300"}`}
+        data-testid={testid}
+      >
+        {cell.revealed
+          ? cell.mine
+            ? "💣"
+            : cell.adjacentMines > 0
+              ? cell.adjacentMines
+              : ""
+          : cell.flagged
+            ? "🚩"
+            : ""}
+      </div>
     </div>
   );
 }
@@ -116,7 +120,7 @@ function Board({
   const cols = board[0].length;
   return (
     <div
-      className="inline-grid gap-0.5"
+      className="inline-grid"
       data-testid="board"
       style={{ gridTemplateColumns: `repeat(${cols}, 2.25rem)` }}
       onContextMenu={(e) => e.preventDefault()}
