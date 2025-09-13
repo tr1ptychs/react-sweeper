@@ -71,8 +71,7 @@ function Cell({
       onPointerEnter={onHover}
       onPointerLeave={onLeave}
       onPointerUp={(e) => {
-        if (e.button !== 0) return;
-        e.preventDefault();
+        if (e.button == 2) return;
         onReveal();
       }}
       onPointerDown={(e) => {
