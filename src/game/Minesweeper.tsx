@@ -209,6 +209,62 @@ function Toast({ show, message }: { show: boolean; message: string }) {
   );
 }
 
+export function FloatingFlag({
+  flagMode,
+  setFlagMode,
+}: {
+  flagMode: boolean;
+  setFlagMode: (v: boolean) => void;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const vv = window.visualViewport as VisualViewport;
+    const el = ref.current as HTMLElement;
+    if (!vv || !el) return;
+
+    const MARGIN = 75; // css px from right/bottom inside visual viewport
+
+    function layout() {
+      // Where the bottom-right corner of the visual viewport currently is
+      const x = vv.offsetLeft + vv.width - MARGIN;
+      const y = vv.offsetTop + vv.height - MARGIN;
+
+      // Place relative to (0,0) with a transform so we can compensate scale
+      el.style.position = "fixed";
+      el.style.left = "0px";
+      el.style.top = "0px";
+      el.style.transformOrigin = "right bottom";
+
+      // Inverse-scale so it doesn't grow/shrink with pinch zoom
+      const s = vv.scale || 1;
+      el.style.transform = `translate(${x}px, ${y}px) scale(${1 / s}) translateZ(0)`;
+    }
+
+    layout();
+    vv.addEventListener("resize", layout);
+    vv.addEventListener("scroll", layout);
+    return () => {
+      vv.removeEventListener("resize", layout);
+      vv.removeEventListener("scroll", layout);
+    };
+  }, []);
+
+  return (
+    <div className="pointer-events-none fixed inset-0">
+      <button
+        ref={ref}
+        className={`pointer-events-auto md:hidden rounded-full px-4 py-3 shadow-lg font-semibold`}
+        aria-pressed={flagMode}
+        aria-label="Toggle flag mode"
+        onClick={() => setFlagMode(!flagMode)}
+      >
+        {flagMode ? "🚩" : "🔎"}
+      </button>
+    </div>
+  );
+}
+
 export default function Minesweeper() {
   const [preset, setPreset] = useState<PresetKey>("Beginner");
   const [rows, setRows] = useState(PRESETS[preset].rows);
@@ -244,6 +300,8 @@ export default function Minesweeper() {
       ms,
     );
   }
+
+  const [flagMode, setFlagMode] = useState(false);
 
   const [dailyScores, setDailyScores] = useState<Daily[]>(() => {
     try {
@@ -313,7 +371,7 @@ export default function Minesweeper() {
 
   const pressedSet = useMemo(() => {
     const set = new Set<string>();
-    if (!pressing || !hover || !alive || won) return set;
+    if (!pressing || !hover || !alive || won || flagMode) return set;
 
     const { row, col } = hover;
     const base = board[row][col];
@@ -387,8 +445,29 @@ export default function Minesweeper() {
     setBoard(nextBoard);
   }, []);
 
+  const handleFlag = useCallback(
+    (loc: Location) => {
+      const prevBoard = board;
+      const nextBoard = prevBoard.map((row) =>
+        row.map((cell) => ({ ...cell })),
+      );
+      const cell = nextBoard[loc.row][loc.col];
+
+      if (!alive || won || cell.revealed) return;
+
+      cell.flagged = !cell.flagged;
+      setBoard(nextBoard);
+    },
+    [alive, board, won],
+  );
+
   const handleReveal = useCallback(
     (loc: Location) => {
+      if (flagMode) {
+        handleFlag(loc);
+        return;
+      }
+
       if (!alive || won || board[loc.row][loc.col].flagged) return;
 
       const prevBoard = board;
@@ -425,23 +504,19 @@ export default function Minesweeper() {
       }
       setBoard(nextBoard);
     },
-    [firstClick, mines, rows, cols, alive, board, won, handleChord, seed],
-  );
-
-  const handleFlag = useCallback(
-    (loc: Location) => {
-      const prevBoard = board;
-      const nextBoard = prevBoard.map((row) =>
-        row.map((cell) => ({ ...cell })),
-      );
-      const cell = nextBoard[loc.row][loc.col];
-
-      if (!alive || won || cell.revealed) return;
-
-      cell.flagged = !cell.flagged;
-      setBoard(nextBoard);
-    },
-    [alive, board, won],
+    [
+      firstClick,
+      mines,
+      rows,
+      cols,
+      alive,
+      board,
+      won,
+      handleChord,
+      seed,
+      handleFlag,
+      flagMode,
+    ],
   );
 
   function reset() {
@@ -522,6 +597,8 @@ export default function Minesweeper() {
         </div>
 
         <Toast show={toast.show} message={toast.msg} />
+        <FloatingFlag flagMode={flagMode} setFlagMode={setFlagMode} />
+
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             {Object.keys(PRESETS).map(
