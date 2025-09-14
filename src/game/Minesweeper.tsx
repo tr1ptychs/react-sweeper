@@ -463,7 +463,7 @@ export default function Minesweeper() {
 
   const handleReveal = useCallback(
     (loc: Location) => {
-      if (flagMode) {
+      if (flagMode && !board[loc.row][loc.col].revealed) {
         handleFlag(loc);
         return;
       }
