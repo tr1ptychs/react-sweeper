@@ -392,7 +392,7 @@ export default function Minesweeper() {
       }
     }
     return set;
-  }, [pressing, hover, board, alive, won]);
+  }, [pressing, hover, board, alive, won, flagMode]);
 
   useEffect(() => {
     if (location.pathname.endsWith("/daily")) {
@@ -412,6 +412,7 @@ export default function Minesweeper() {
     setFirstClick(true);
     setAlive(true);
     setRevealed(0);
+    setFlagMode(false);
   }, [rows, cols, mines]);
 
   function resetToPreset(k: PresetKey) {
@@ -419,6 +420,7 @@ export default function Minesweeper() {
     setRows(PRESETS[k].rows);
     setCols(PRESETS[k].cols);
     setMines(PRESETS[k].mines);
+    setFlagMode(false);
     if (k === "Daily") {
       const r = PRESETS[k].rows,
         c = PRESETS[k].cols,
@@ -524,6 +526,7 @@ export default function Minesweeper() {
     setFirstClick(true);
     setAlive(true);
     setRevealed(0);
+    setFlagMode(false);
   }
 
   useEffect(() => {
