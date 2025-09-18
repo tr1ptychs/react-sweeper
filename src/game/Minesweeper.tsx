@@ -74,12 +74,11 @@ function Cell({
         onReveal();
       }}
       onPointerDown={(e) => {
-        if (e.button !== 0) return;
-        onPress();
-      }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onFlag();
+        if (e.button == 0) {
+          onPress();
+        } else if (e.button == 2) {
+          onFlag();
+        }
       }}
     >
       <div
@@ -545,8 +544,8 @@ export default function Minesweeper() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      const t = e.target as HTMLElement | null;
-      if (!hover || !t || !alive) return;
+      if (e.repeat) return;
+      if (!hover || !alive) return;
 
       if (e.key === "w") {
         e.preventDefault();
@@ -558,7 +557,7 @@ export default function Minesweeper() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [alive, hover, handleReveal, handleFlag]);
+  }, [alive, hover, handleFlag]);
 
   const flagsUsed = useMemo(
     () => board.flat().filter((c) => c.flagged).length,

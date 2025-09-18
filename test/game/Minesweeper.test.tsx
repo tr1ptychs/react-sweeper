@@ -87,7 +87,8 @@ describe("Minesweeper", () => {
     const grid = screen.getByTestId("board");
     const cell = grid.firstElementChild as HTMLElement;
 
-    fireEvent.contextMenu(cell);
+    const user = userEvent.setup();
+    await user.pointer({ target: cell, keys: "[MouseRight]" }); // right button
     expect(cell).toHaveTextContent("🚩");
     expect(screen.getAllByText(/^\d{3}$/)[0]).toHaveTextContent("009");
   });
@@ -245,7 +246,7 @@ describe("Minesweeper", () => {
     expect(chordTile).toHaveTextContent("1");
 
     const correctNeighbor = screen.getByTestId("cell-2-0");
-    fireEvent.contextMenu(correctNeighbor);
+    await user.pointer({ target: correctNeighbor, keys: "[MouseRight]" }); // right button
     expect(correctNeighbor).toHaveTextContent("🚩");
 
     await user.click(chordTile);
@@ -286,7 +287,7 @@ describe("Minesweeper", () => {
 
     expect(callsAfter).toBe(callsBefore);
 
-    fireEvent.contextMenu(otherCell);
+    fireEvent.pointerDown(otherCell, { button: 2 });
     expect(otherCell).toHaveTextContent("");
   });
 
@@ -314,7 +315,7 @@ describe("Minesweeper", () => {
     expect(chordTile).toHaveTextContent("1");
 
     const wrongNeighbor = screen.getByTestId("cell-2-1");
-    fireEvent.contextMenu(wrongNeighbor);
+    await user.pointer({ target: wrongNeighbor, keys: "[MouseRight]" }); // right button
     expect(wrongNeighbor).toHaveTextContent("🚩");
 
     await user.click(chordTile);
@@ -329,7 +330,8 @@ describe("Minesweeper", () => {
 
     expect(callsAfter).toBe(callsBefore);
 
-    fireEvent.contextMenu(otherCell);
+    fireEvent.pointerDown(otherCell, { button: 2 });
+    fireEvent.pointerUp(otherCell, { button: 2 });
     expect(otherCell).toHaveTextContent("");
 
     fireEvent.pointerEnter(otherCell);
@@ -356,6 +358,7 @@ describe("Daily preset", () => {
     await user.click(screen.getByRole("button", { name: "Beginner" }));
     expect(window.location.pathname).toBe("/");
   });
+
   it("Sets correct mines and dimension when navigating to /daily", async () => {
     window.history.pushState({}, "", "/daily");
     const user = userEvent.setup();
