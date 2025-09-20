@@ -16,7 +16,7 @@ const PRESETS = {
   Beginner: { rows: 9, cols: 9, mines: 10 },
   Intermediate: { rows: 16, cols: 16, mines: 40 },
   Expert: { rows: 16, cols: 30, mines: 99 },
-  Daily: { rows: 20, cols: 30, mines: 1 },
+  Daily: { rows: 20, cols: 30, mines: 130 },
 };
 
 type PresetKey = keyof typeof PRESETS;
