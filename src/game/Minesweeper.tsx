@@ -312,13 +312,13 @@ export default function Minesweeper() {
   });
 
   const hasTodayDaily = dailyScores.find(
-    (score) => score.date === new Date().toISOString().slice(0, 10),
+    (score) => score.date === new Date().toUTCString().slice(0, 10),
   );
 
   if (!hasTodayDaily) {
     const newDailyScores = [...dailyScores];
     newDailyScores.push({
-      date: new Date().toISOString().slice(0, 10),
+      date: new Date().toUTCString().slice(0, 10),
       won: false,
       time: 0,
       deaths: 0,
@@ -328,13 +328,13 @@ export default function Minesweeper() {
 
   useEffect(() => {
     const hasWonTodayDaily = dailyScores.find(
-      (score) => score.date === new Date().toISOString().slice(0, 10),
+      (score) => score.date === new Date().toUTCString().slice(0, 10),
     )?.won;
 
     const newDailyScores = [...dailyScores];
     if (!alive && preset === "Daily" && !hasWonTodayDaily) {
       const todayDaily = newDailyScores.find(
-        (score) => score.date === new Date().toISOString().slice(0, 10),
+        (score) => score.date === new Date().toUTCString().slice(0, 10),
       );
       if (todayDaily) {
         todayDaily.time += secs;
@@ -342,7 +342,7 @@ export default function Minesweeper() {
       }
     } else if (alive && won && preset === "Daily" && !hasWonTodayDaily) {
       const todayDaily = newDailyScores.find(
-        (score) => score.date === new Date().toISOString().slice(0, 10),
+        (score) => score.date === new Date().toUTCString().slice(0, 10),
       );
       if (todayDaily) {
         todayDaily.won = true;
@@ -544,6 +544,7 @@ export default function Minesweeper() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      const t = e.target as HTMLElement;
       if (e.repeat) return;
       if (!hover || !alive) return;
 
@@ -572,7 +573,7 @@ export default function Minesweeper() {
         : "hmm";
 
   const todayStats = dailyScores.find(
-    (score) => score.date === new Date().toISOString().slice(0, 10),
+    (score) => score.date === new Date().toUTCString().slice(0, 10),
   ) as Daily;
 
   const handleShareDailyWin = async () => {
