@@ -530,10 +530,9 @@ export default function Minesweeper() {
 
   useEffect(() => {
     function onKeyUp(e: KeyboardEvent) {
-      const t = e.target as HTMLElement | null;
       if (e.key === "q") {
         setPressing(false);
-        if (!hover || !t || !alive) return;
+        if (!hover || !alive) return;
         e.preventDefault();
         handleReveal(hover);
       }
@@ -544,7 +543,6 @@ export default function Minesweeper() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      const t = e.target as HTMLElement;
       if (e.repeat) return;
       if (!hover || !alive) return;
 
