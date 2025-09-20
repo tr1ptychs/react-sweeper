@@ -16,7 +16,7 @@ const PRESETS = {
   Beginner: { rows: 9, cols: 9, mines: 10 },
   Intermediate: { rows: 16, cols: 16, mines: 40 },
   Expert: { rows: 16, cols: 30, mines: 99 },
-  Daily: { rows: 20, cols: 30, mines: 130 },
+  Daily: { rows: 20, cols: 30, mines: 1 },
 };
 
 type PresetKey = keyof typeof PRESETS;
@@ -27,6 +27,14 @@ type Daily = {
   won: boolean;
   date: string;
 };
+
+function utcDate(): string {
+  const now = new Date();
+  const y = now.getUTCFullYear();
+  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(now.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 function Cell({
   cell,
@@ -311,14 +319,12 @@ export default function Minesweeper() {
     }
   });
 
-  const hasTodayDaily = dailyScores.find(
-    (score) => score.date === new Date().toUTCString().slice(0, 10),
-  );
+  const hasTodayDaily = dailyScores.find((score) => score.date === utcDate());
 
   if (!hasTodayDaily) {
     const newDailyScores = [...dailyScores];
     newDailyScores.push({
-      date: new Date().toUTCString().slice(0, 10),
+      date: utcDate(),
       won: false,
       time: 0,
       deaths: 0,
@@ -328,13 +334,13 @@ export default function Minesweeper() {
 
   useEffect(() => {
     const hasWonTodayDaily = dailyScores.find(
-      (score) => score.date === new Date().toUTCString().slice(0, 10),
+      (score) => score.date === utcDate(),
     )?.won;
 
     const newDailyScores = [...dailyScores];
     if (!alive && preset === "Daily" && !hasWonTodayDaily) {
       const todayDaily = newDailyScores.find(
-        (score) => score.date === new Date().toUTCString().slice(0, 10),
+        (score) => score.date === utcDate(),
       );
       if (todayDaily) {
         todayDaily.time += secs;
@@ -342,7 +348,7 @@ export default function Minesweeper() {
       }
     } else if (alive && won && preset === "Daily" && !hasWonTodayDaily) {
       const todayDaily = newDailyScores.find(
-        (score) => score.date === new Date().toUTCString().slice(0, 10),
+        (score) => score.date === utcDate(),
       );
       if (todayDaily) {
         todayDaily.won = true;
@@ -571,7 +577,7 @@ export default function Minesweeper() {
         : "hmm";
 
   const todayStats = dailyScores.find(
-    (score) => score.date === new Date().toUTCString().slice(0, 10),
+    (score) => score.date === utcDate(),
   ) as Daily;
 
   const handleShareDailyWin = async () => {
