@@ -582,11 +582,10 @@ export default function Minesweeper() {
 
   const handleShareDailyWin = async () => {
     const text = `⏰: ${todayStats.time}\n💀: ${todayStats.deaths}`;
-    const date = new Date().toLocaleDateString();
 
     try {
       await navigator.clipboard.writeText(
-        `Daily Minesweeper Challenge: ${date}\n${"https://react-sweeper-snowy.vercel.app/daily"}\n${text}`,
+        `Daily Minesweeper Challenge: ${utcDate()}\n${"https://react-sweeper-snowy.vercel.app/daily"}\n${text}`,
       );
       notify("Results copied to clipboard");
     } catch {
